@@ -126,8 +126,8 @@ identifier = type(model).__name__ + '_'
 The prefix of the model will change, if you need to further change the naming of checkpoints, try modify ```_save_checkpoint()``` in class ```BaseTrainer```
 
 ## TODOs
-- [ ] Add support for multi-gpu training
-- [ ] Remove all ```print(.)``` instructions and subsitute them with ```logging```
+- [x] Add support for multi-gpu training
+- [x] Remove all ```print(.)``` instructions and subsitute them with ```logging```
 - [ ] Add Tensorboard support by generating files it can read; removing current logger
 - [ ] Add metric name used for exporting the metrics in the Tensorboard file as well
 - [ ] Add checkpoint saver during training (already defined in base_trainer)
@@ -135,3 +135,4 @@ The prefix of the model will change, if you need to further change the naming of
 - [ ] Change ```save_freq``` in base_trainer for training every n iterations rather than epochs
 - [ ] Add functionality to sample if needed the val set
 - [ ] Change ```_save_checkpoint``` in base_trainer taking as input both epoch and iteration and save file with right name
+- [ ] Update ReadMe file

@@ -9,18 +9,17 @@ class Trainer(BaseTrainer):
 
     Note:
         Inherited from BaseTrainer.
-        Modify __init__() if you have additional arguments to pass.
     """
     def __init__(self, model, loss, metrics, data_loader, optimizer, epochs,
-                 save_dir, save_freq, resume, with_cuda, verbosity, identifier='',
-                 valid_data_loader=None, logger=None):
+                 training_name, save_dir, save_freq, resume, with_cuda, verbosity,
+                 valid_data_loader=None):
         super(Trainer, self).__init__(model, loss, metrics, optimizer, epochs,
-                                      save_dir, save_freq, resume, verbosity, identifier, logger)
+                                      training_name, save_dir, save_freq, with_cuda,
+                                      resume, verbosity)
         self.batch_size = data_loader.batch_size
         self.data_loader = data_loader
         self.valid_data_loader = valid_data_loader
         self.valid = True if self.valid_data_loader else False
-        self.with_cuda = with_cuda
 
     def _train_epoch(self, epoch):
         """ Train an epoch
@@ -63,7 +62,7 @@ class Trainer(BaseTrainer):
             total_loss += loss.data[0]
             log_step = int(np.sqrt(self.batch_size))
             if self.verbosity >= 2 and batch_idx % log_step == 0:
-                print('Train Epoch: {} [{}/{} ({:.0f}%)] Loss: {:.6f}'.format(
+                self._logger.info('Train Epoch: {} [{}/{} ({:.0f}%)] Loss: {:.6f}'.format(
                     epoch, batch_idx * len(data), len(self.data_loader) * len(data),
                     100.0 * batch_idx / len(self.data_loader), loss.data[0]))
 
@@ -74,6 +73,24 @@ class Trainer(BaseTrainer):
         if self.valid:
             val_log = self._valid_epoch()
             log = {**log, **val_log}
+
+        # TODO: change this with new logger
+        if self.logger:
+            log = {'epoch': epoch}
+            for key, value in result.items():
+                if key == 'metrics':
+                    for i, metric in enumerate(self.metrics):
+                        log[metric.__name__] = result['metrics'][i]
+                elif key == 'val_metrics':
+                    for i, metric in enumerate(self.metrics):
+                        log['val_' + metric.__name__] = result['val_metrics'][i]
+                else:
+                    log[key] = value
+            self.logger.add_entry(log)
+            if self.verbosity >= 1:
+                print(log)
+        if epoch % self.save_freq == 0:
+            self._save_checkpoint(epoch, result['loss'])
 
         return log
 
@@ -86,6 +103,9 @@ class Trainer(BaseTrainer):
             Modify this part if you need to.
         """
         self.model.eval()
+        if self.with_cuda:
+            self.model.cuda()
+
         total_val_loss = 0
         total_val_metrics = np.zeros(len(self.metrics))
         for batch_idx, (data, target) in enumerate(self.valid_data_loader):
