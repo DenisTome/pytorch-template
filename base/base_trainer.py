@@ -16,7 +16,7 @@ class BaseTrainer:
 
     def __init__(self, model, loss, metrics, optimizer, epochs,
                  training_name, save_dir, save_freq, with_cuda,
-                 resume, verbosity):
+                 resume, verbosity, train_log_step):
         self.model = model
         self.loss = loss
         self.metrics = metrics
@@ -27,12 +27,14 @@ class BaseTrainer:
         self.save_freq = save_freq
         self.with_cuda = with_cuda
         self.verbosity = verbosity
+        self.train_log_step = train_log_step
         self.min_loss = math.inf
         self.start_epoch = 1
         self._logger = logging.getLogger(self.__class__.__name__)
         self.model_logger = Logger(os.path.join(save_dir,
                                                 self.training_name,
-                                                'log'))
+                                                'log'),
+                                   self.training_name)
 
         # check that we can run on GPU
         if not torch.cuda.is_available():

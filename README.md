@@ -29,13 +29,16 @@ optional arguments:
                         directory of saved model (default: model/saved)
   --save-freq SAVE_FREQ
                         training checkpoint frequency (default: 1)
+  --train_log_step TRAIN_LOG_STEP
+                        log frequency in number of iterations for training (default: 200)
+  --val_log_step VAL_LOG_STEP
+                        log frequency in number of iterations for validation (default: 2000)
   --data-dir DATA_DIR
                         directory of training/testing data (default: datasets)
   --validation-split VALIDATION_SPLIT
                         ratio of split validation data, [0.0, 1.0) (default: 0.0)
   --no-cuda   use CPU in case there's no GPU support
 ```
-You can add your own arguments.
 
 ## Structure
 ```
@@ -47,14 +50,15 @@ You can add your own arguments.
 ├── data_loader/ - anything about data loading goes here
 │   └── data_loader.py
 │
+├── data/ - dir containing saved models as well as log files
+│
 ├── datasets/ - default dataset folder
 │
-├── logger/ - for training process logging
+├── logger/ - for training process logging (generating Tensorboard readable files)
 │   └── logger.py
 │
 ├── model/ - models, losses, and metrics
 │   ├── modules/ - submodules of your model
-│   ├── saved/ - default checkpoint folder
 │   ├── loss.py
 │   ├── metric.py
 │   └── model.py
@@ -69,70 +73,36 @@ You can add your own arguments.
 ```
 
 ## Customization
-### Training
-In most cases, you need to modify ```trainer/trainer.py``` to fit the training logic of your project
-### Data loading
-You can customize data loader to fit your project, just modify ```data_loader/data_loader.py``` or add other files.
-### Model
-Implement your model under ```model/```
 ### Loss/metrics
 If you need to change the loss function or metrics, first ```import``` those function in ```main.py```, then modify this part:
 ```python
 loss = my_loss
 metrics = [my_metric]
 ```
-You'll see the logging has changed during training:
-```
-⋯
-Train Epoch: 1 [53920/53984 (100%)] Loss: 0.033256
-{'epoch': 1, 'loss': 0.14182623870152963, 'my_metric': 0.9568761114404268, 'val_loss': 0.06394806604976841, 'val_my_metric': 0.9804478609625669}
-Saving checkpoint: model/saved/Model_checkpoint_epoch01_loss_0.14183.pth.tar ...
-Train Epoch: 2 [0/53984 (0%)] Loss: 0.013225
-⋯
-```
+The metrics and loss are going to be automatically added to the log file.
+
 #### Multiple metrics
 If you have multiple metrics in your project, just add it to the ```metrics``` list:
 ```python
 loss = my_loss
 metrics = [my_metric, my_metric2]
 ```
-Now the logging shows two metrics:
-```
-⋯
-Train Epoch: 1 [53920/53984 (100%)] Loss: 0.003278
-{'epoch': 1, 'loss': 0.13541310020907665, 'my_metric': 0.9590804682868999, 'my_metric2': 1.9181609365737997, 'val_loss': 0.05264156081223173, 'val_my_metric': 0.9837901069518716, 'val_my_metric2': 1.9675802139037433}
-Saving checkpoint: model/saved/Model_checkpoint_epoch01_loss_0.13541.pth.tar ...
-Train Epoch: 2 [0/53984 (0%)] Loss: 0.023072
-⋯
-```
-Currently the name shown in log is the name of the function.
-### Additional logging
-If you have additional information to be logged, you can modify ```_train_epoch()``` in class ```Trainer```, for example, say you have an additional log saved as a dictionary:
-```python
-additional_log = {"x": x, "y": y}
-```
-just merge it with ```log``` as shown below before returning:
-```python
-log = {**log, **additional_log}
-return log
-```
+Now the logging shows two metrics.
+
 ### Validation data
 If you have separate validation data, try implement another data loader for validation, otherwise if you just want to split validation data from training data, try pass ```--validation-split 0.1```, in some cases you might need to modify ```utils/util.py```
-### Checkpoint naming
-If you need to add prefix to your checkpoint, modify this line in ```main.py```
-```python
-identifier = type(model).__name__ + '_'
-```
-The prefix of the model will change, if you need to further change the naming of checkpoints, try modify ```_save_checkpoint()``` in class ```BaseTrainer```
+
 
 ## TODOs
 - [x] Add support for multi-gpu training
 - [x] Remove all ```print(.)``` instructions and subsitute them with ```logging```
-- [ ] Add Tensorboard support by generating files it can read; removing current logger
-- [ ] Add metric name used for exporting the metrics in the Tensorboard file as well
-- [ ] Add checkpoint saver during training (already defined in base_trainer)
-- [ ] Change train in base_trainer saving at the end of each epoch
-- [ ] Change ```save_freq``` in base_trainer for training every n iterations rather than epochs
+- [x] Add Tensorboard support by generating files it can read; removing current logger
+- [x] Add metric name used for exporting the metrics in the Tensorboard file as well
+- [x] Add checkpoint saver during training (already defined in base_trainer)
+- [x] Change train in base_trainer saving at the end of each epoch
+- [x] Change ```save_freq``` in base_trainer for training every n iterations rather than epochs
 - [ ] Add functionality to sample if needed the val set
-- [ ] Change ```_save_checkpoint``` in base_trainer taking as input both epoch and iteration and save file with right name
+- [x] Change ```_save_checkpoint``` in base_trainer taking as input both epoch and iteration and save file with right name
 - [ ] Update ReadMe file
+- [ ] Check that all the changes are working
+- [ ] Add during training the graph definition

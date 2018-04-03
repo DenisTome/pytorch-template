@@ -20,8 +20,12 @@ parser.add_argument('--training_name', default='train_one', type=str,
                     help='name of the training (default: train_one)')
 parser.add_argument('--save-dir', default='data/saved_models', type=str,
                     help='directory of saved model (default: model/saved)')
-parser.add_argument('--save-freq', default=1000, type=int,
+parser.add_argument('--save-freq', default=10000, type=int,
                     help='training checkpoint frequency in number of iterations(default: 1000)')
+parser.add_argument('--train_log_step', default=200, type=int,
+                    help='log frequency in number of iterations for training (default: 200)')
+parser.add_argument('--val_log_step', default=2000, type=int,
+                    help='log frequency in number of iterations for validation (default: 2000)')
 parser.add_argument('--data-dir', default='datasets', type=str,
                     help='directory of training/testing data (default: datasets)')
 parser.add_argument('--validation-split', default=0.1, type=float,
@@ -38,6 +42,7 @@ def main(args):
     # Specifying loss function, metric(s), and optimizer
     loss = my_loss
     metrics = [my_metric, my_metric2]
+    # define learning rate and other parameters depending on the optimizer
     optimizer = optim.Adam(model.parameters())
 
     # Data loader and validation split
@@ -55,6 +60,8 @@ def main(args):
                       save_freq=args.save_freq,
                       resume=args.resume,
                       verbosity=args.verbosity,
+                      train_log_step=args.train_log_step,
+                      val_log_step=args.val_log_step,
                       with_cuda=not args.no_cuda)
 
     # Start training!
