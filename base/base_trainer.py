@@ -53,9 +53,10 @@ class BaseTrainer:
     def train(self):
         for epoch in range(self.start_epoch, self.epochs + 1):
             if self.verbosity:
-                self._logger.info('Training epoch {:d} of {:d}'.format(self.start_epoch,
+                self._logger.info('Training epoch {:d} of {:d}'.format(epoch,
                                                                        self.epochs + 1))
-            self._train_epoch(epoch)
+            epoch_loss, max_iter = self._train_epoch(epoch)
+            self._save_checkpoint(epoch, max_iter, epoch_loss)
 
     def _train_epoch(self, epoch):
         raise NotImplementedError
