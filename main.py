@@ -1,4 +1,5 @@
 import argparse
+import logging
 import torch.optim as optim
 from model.model import Model
 from model.loss import my_loss
@@ -6,6 +7,8 @@ from model.metric import my_metric, my_metric2
 from data_loader.data_loader import DataLoader
 from utils.util import split_validation
 from trainer.trainer import Trainer
+
+_logger = logging.getLogger('main')
 
 parser = argparse.ArgumentParser(description='PyTorch Template')
 parser.add_argument('-b', '--batch-size', default=32, type=int,
@@ -69,4 +72,5 @@ def main(args):
 
 
 if __name__ == '__main__':
+    logging.basicConfig(level=logging.INFO)
     main(parser.parse_args())

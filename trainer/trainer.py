@@ -33,8 +33,8 @@ class Trainer(BaseTrainer):
         if self.with_cuda:
             self.model.cuda()
 
-        total_loss = 0
         num_elements = len(self.data_loader)
+        total_loss = 0
         for batch_idx, (data, target) in enumerate(self.data_loader):
             _log_iter_number = epoch * num_elements + batch_idx
             data, target = torch.FloatTensor(data), torch.LongTensor(target)
@@ -49,9 +49,9 @@ class Trainer(BaseTrainer):
             self.optimizer.step()
 
             if (batch_idx % self.train_log_step) == 0:
-                # TODO: check what is returned form loss.data.cpu()
+                val = loss.item()
                 self.model_logger.train.add_scalar('loss/iterations',
-                                                   loss.data[0],
+                                                   val,
                                                    _log_iter_number)
 
                 for i, metric in enumerate(self.metrics):
@@ -64,8 +64,8 @@ class Trainer(BaseTrainer):
                                                        _log_iter_number)
 
             if (batch_idx % self.save_freq) == 0:
-                # TODO: check what is returned form loss
-                self._save_checkpoint(epoch, _log_iter_number, total_loss / batch_idx)
+                if total_loss:
+                    self._save_checkpoint(epoch, _log_iter_number, total_loss / batch_idx)
 
             if self.valid and (batch_idx % self.val_log_step == 0):
                 # TODO: check what is returned form metrics
@@ -82,12 +82,13 @@ class Trainer(BaseTrainer):
 
                 self.model.train()
 
-            total_loss += loss.data[0]
+            total_loss += loss.item()
 
         avg_loss = total_loss / len(self.data_loader)
         self.model_logger.train.add_scalar('loss/epochs',
                                            avg_loss,
                                            epoch)
+        return avg_loss, batch_idx
 
     def _valid_epoch(self):
         """ Validate after training an epoch
@@ -100,7 +101,7 @@ class Trainer(BaseTrainer):
 
         total_val_loss = 0
         total_val_metrics = np.zeros(len(self.metrics))
-        for batch_idx, (data, target) in enumerate(self.valid_data_loader):
+        for (data, target) in self.valid_data_loader:
             data, target = torch.FloatTensor(data), torch.LongTensor(target)
             data, target = Variable(data), Variable(target)
             if self.with_cuda:
@@ -108,7 +109,7 @@ class Trainer(BaseTrainer):
 
             output = self.model(data)
             loss = self.loss(output, target)
-            total_val_loss += loss.data[0]
+            total_val_loss += loss.item()
 
             for i, metric in enumerate(self.metrics):
                 y_output = output.data.cpu().numpy()
