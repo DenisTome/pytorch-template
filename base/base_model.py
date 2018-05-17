@@ -7,11 +7,10 @@ import numpy as np
 
 
 class BaseModel(nn.Module):
-    """ Base class for all model.
-
-    Note:
-        No need to modify this in most cases.
     """
+    Base class for all model
+    """
+
     def __init__(self):
         super(BaseModel, self).__init__()
         self.model = None
@@ -25,5 +24,5 @@ class BaseModel(nn.Module):
 
     def summary(self):
         model_parameters = filter(lambda p: p.requires_grad, self.parameters())
-        params = sum([np.prod(p.size()) for p in model_parameters])
+        params = np.sum([np.prod(p.size()) for p in model_parameters])
         self._logger.info('Trainable parameters:{}'.format(params))

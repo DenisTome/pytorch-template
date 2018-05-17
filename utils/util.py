@@ -4,6 +4,12 @@ import numpy as np
 
 
 def ensure_dir(path):
+    """
+    Make sure that directory exists at the specified
+    path. If it doesn't, it's created.
+
+    :param path: path of the directory to check
+    """
     if not os.path.exists(path):
         os.makedirs(path)
 
