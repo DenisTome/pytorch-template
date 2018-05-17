@@ -2,6 +2,7 @@ import torch
 import numpy as np
 from torchvision import datasets, transforms
 from base.base_data_loader import BaseDataLoader
+from utils.common import DATA_DIR
 
 
 class DataLoader(BaseDataLoader):
@@ -14,7 +15,7 @@ class DataLoader(BaseDataLoader):
         self.data_dir = data_dir
         self.data_loader = torch.utils.data.DataLoader(
             datasets.MNIST(
-                '../data',
+                DATA_DIR,
                 train=True,
                 download=True,
                 transform=transforms.Compose([

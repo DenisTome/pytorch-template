@@ -45,7 +45,7 @@ parser.add_argument(
     help='name of the training (default: train_one)')
 parser.add_argument(
     '--save-dir',
-    default='data/saved_models',
+    default='data/checkpoints',
     type=str,
     help='directory of saved model (default: model/saved)')
 parser.add_argument(
