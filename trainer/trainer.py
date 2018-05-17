@@ -13,10 +13,10 @@ class Trainer(BaseTrainer):
 
     def __init__(self, model, loss, metrics, data_loader, optimizer, epochs,
                  training_name, save_dir, save_freq, resume, with_cuda, verbosity,
-                 train_log_step, val_log_step, valid_data_loader=None):
+                 train_log_step, val_log_step, verbosity_iter, valid_data_loader=None):
         super(Trainer, self).__init__(model, loss, metrics, optimizer, epochs,
                                       training_name, save_dir, save_freq, with_cuda,
-                                      resume, verbosity, train_log_step)
+                                      resume, verbosity, train_log_step, verbosity_iter)
         self.batch_size = data_loader.batch_size
         self.data_loader = data_loader
         self.valid_data_loader = valid_data_loader
@@ -35,7 +35,12 @@ class Trainer(BaseTrainer):
 
         num_elements = len(self.data_loader)
         total_loss = 0
+        batch_idx = 0
         for batch_idx, (data, target) in enumerate(self.data_loader):
+            # start from the right point when restoring models
+            if batch_idx < self.start_iteration:
+                continue
+
             _log_iter_number = epoch * num_elements + batch_idx
             data, target = torch.FloatTensor(data), torch.LongTensor(target)
             data, target = Variable(data), Variable(target)
@@ -47,6 +52,10 @@ class Trainer(BaseTrainer):
             loss = self.loss(output, target)
             loss.backward()
             self.optimizer.step()
+
+            if (batch_idx % self.verbosity_iter == 0) & (self.verbosity == 2):
+                self._logger.info('Epoch {:d} iteration {:d}'.format(epoch,
+                                                                     batch_idx))
 
             if (batch_idx % self.train_log_step) == 0:
                 val = loss.item()
@@ -91,7 +100,8 @@ class Trainer(BaseTrainer):
         return avg_loss, batch_idx
 
     def _valid_epoch(self):
-        """ Validate after training an epoch
+        """
+        Validate after training an epoch
 
         :return: loss and metrics
         """

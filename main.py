@@ -19,6 +19,8 @@ parser.add_argument('--resume', default='', type=str,
                     help='path to latest checkpoint (default: none)')
 parser.add_argument('--verbosity', default=2, type=int,
                     help='verbosity, 0: quiet, 1: per epoch, 2: complete (default: 2)')
+parser.add_argument('--verbosity_iter', default=1000, type=int,
+                    help='after how many iterations to show info')
 parser.add_argument('--training_name', default='train_one', type=str,
                     help='name of the training (default: train_one)')
 parser.add_argument('--save-dir', default='data/saved_models', type=str,
@@ -63,6 +65,7 @@ def main(args):
                       save_freq=args.save_freq,
                       resume=args.resume,
                       verbosity=args.verbosity,
+                      verbosity_iter=args.verbosity_iter,
                       train_log_step=args.train_log_step,
                       val_log_step=args.val_log_step,
                       with_cuda=not args.no_cuda)

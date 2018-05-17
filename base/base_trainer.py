@@ -1,4 +1,5 @@
 import os
+import re
 import math
 import shutil
 import torch
@@ -16,7 +17,10 @@ class BaseTrainer:
 
     def __init__(self, model, loss, metrics, optimizer, epochs,
                  training_name, save_dir, save_freq, with_cuda,
-                 resume, verbosity, train_log_step):
+                 resume, verbosity, train_log_step, verbosity_iter):
+
+        self._logger = logging.getLogger(self.__class__.__name__)
+
         self.model = model
         self.loss = loss
         self.metrics = metrics
@@ -27,10 +31,11 @@ class BaseTrainer:
         self.save_freq = save_freq
         self.with_cuda = with_cuda
         self.verbosity = verbosity
+        self.verbosity_iter = verbosity_iter
         self.train_log_step = train_log_step
         self.min_loss = math.inf
         self.start_epoch = 1
-        self._logger = logging.getLogger(self.__class__.__name__)
+        self.start_iteration = 0
         self.model_logger = Logger(os.path.join(save_dir,
                                                 self.training_name,
                                                 'log'),
@@ -57,6 +62,7 @@ class BaseTrainer:
                                                                        self.epochs))
             epoch_loss, max_iter = self._train_epoch(epoch)
             self._save_checkpoint(epoch, max_iter, epoch_loss)
+            self.start_iteration = 0
 
     def _train_epoch(self, epoch):
         raise NotImplementedError
@@ -85,12 +91,32 @@ class BaseTrainer:
                                                    self.training_name,
                                                    'model_best.pth.tar'))
 
-    def _resume_checkpoint(self, resume_path):
+    def _resume_checkpoint(self, resume_dir, epoch, iteration):
+        """
+        Resume model saved in resume_dir at the specified epoch and iteration
+
+        :param resume_dir: directory with the models
+        :param epoch: epoch of the model
+        :param iteration: iteration of the model
+        """
+
+        models_list = [f for f in os.listdir(resume_dir) if f.endswith(".pth.tar")]
+
+        # getting the right model
+        r = re.compile("ckpt_eph{:02d}_iter{:06d}_.*".format(epoch, iteration))
+        model_name = [m.group(0) for l in models_list for m in [r.search(l)] if m]
+
+        if not model_name:
+            self._logger.error('Model {}/ckpt_eph{:02d}_iter{:06d} does not exist'.format(resume_dir,
+                                                                                          epoch,
+                                                                                          iteration))
+        # load model
+        resume_path = os.path.join(resume_dir,
+                                   model_name[0])
         self._logger.info("Loading checkpoint: {} ...".format(resume_path))
         checkpoint = torch.load(resume_path)
-        self.start_epoch = checkpoint['epoch'] + 1
-        # TODO: add control about start iteration
-        # if > 0 then skip till that point
+        self.start_epoch = checkpoint['epoch']
+        self.start_iteration = checkpoint['iter']
         self.min_loss = checkpoint['min_loss']
         self.model.load_state_dict(checkpoint['state_dict'])
         self.optimizer.load_state_dict(checkpoint['optimizer'])
