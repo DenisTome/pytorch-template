@@ -44,7 +44,7 @@ optional arguments:
 ```
 ├── base/ - abstract base classes
 │   ├── base_data_loader.py - abstract base class for data loaders.
-│   ├── base_model.py - abstract base class for models.
+│   ├── etc.
 │   └── base_trainer.py - abstract base class for trainers
 │
 ├── data_loader/ - anything about data loading goes here
@@ -52,19 +52,23 @@ optional arguments:
 │
 ├── data/ - dir containing saved models as well as log files
 │
-├── datasets/ - default dataset folder
-│
 ├── logger/ - for training process logging (generating Tensorboard readable files)
 │   └── logger.py
 │
 ├── model/ - models, losses, and metrics
 │   ├── modules/ - submodules of your model
-│   ├── loss.py
-│   ├── metric.py
+│       ├── loss.py
+│       └── metric.py
 │   └── model.py
+|
+├── test/ - test modules to make sure they work properly
+│   └── test.py
 │
 ├── trainer/ - trainers for your project
 │   └── trainer.py
+|
+├── tester/ - tester for your project
+│   └── tester.py
 │
 └── utils
      ├── utils.py
@@ -89,20 +93,3 @@ metrics = [my_metric, my_metric2]
 ```
 Now the logging shows two metrics.
 
-### Validation data
-If you have separate validation data, try implement another data loader for validation, otherwise if you just want to split validation data from training data, try pass ```--validation-split 0.1```, in some cases you might need to modify ```utils/util.py```
-
-
-## TODOs
-- [x] Add support for multi-gpu training
-- [x] Remove all ```print(.)``` instructions and subsitute them with ```logging```
-- [x] Add Tensorboard support by generating files it can read; removing current logger
-- [x] Add metric name used for exporting the metrics in the Tensorboard file as well
-- [x] Add checkpoint saver during training (already defined in base_trainer)
-- [x] Change train in base_trainer saving at the end of each epoch
-- [x] Change ```save_freq``` in base_trainer for training every n iterations rather than epochs
-- [ ] Add functionality to sample if needed the val set
-- [x] Change ```_save_checkpoint``` in base_trainer taking as input both epoch and iteration and save file with right name
-- [ ] Update ReadMe file
-- [ ] Check that all the changes are working
-- [ ] Add during training the graph definition

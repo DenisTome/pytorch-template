@@ -92,11 +92,9 @@ class BaseTester:
 
         return var
 
-    def predict_poses(self):
-        raise NotImplementedError
-
     def test(self):
-        self.predict_poses()
+        """Run test on the test-set"""
+        raise NotImplementedError()
 
     def _resume_checkpoint(self, resume_path, epoch=None, iteration=None):
         """

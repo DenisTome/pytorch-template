@@ -5,6 +5,7 @@ Created on Jan 18 16:47 2019
 @author: Denis Tome'
 
 Base model class.
+
 """
 import logging
 import torch.nn as nn

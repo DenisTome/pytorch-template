@@ -1,3 +1,10 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Jun 12 06:38 2018
+
+@author: Denis Tome'
+
+"""
 import os
 import torch
 from torch.autograd import Variable

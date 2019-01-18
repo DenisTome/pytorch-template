@@ -3,6 +3,7 @@
 Created on Jun 25 15:56 2018
 
 @author: Denis Tome'
+
 """
 from base.template import FrameworkClass
 

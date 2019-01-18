@@ -5,6 +5,7 @@ Created on Jun 05 16:17 2018
 @author: Denis Tome'
 
 Base trainer class.
+
 """
 import os
 import math

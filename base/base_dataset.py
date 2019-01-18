@@ -6,6 +6,7 @@ Created on Jan 18 16:47 2019
 
 Base dataset class to be extended in dataset_def dir
 depending on the different datasets.
+
 """
 import utils
 from base.template import FrameworkClass
