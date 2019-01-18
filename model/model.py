@@ -1,3 +1,12 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Jan 18 17:32 2019
+
+@author: Denis Tome'
+
+Example of Model definition class
+
+"""
 from base.base_model import BaseModel
 import torch.nn as nn
 import torch.nn.functional as F
@@ -5,7 +14,7 @@ import torch.nn.functional as F
 
 class Model(BaseModel):
     def __init__(self):
-        super(Model, self).__init__()
+        super().__init__()
         self.cnn = None
         self.fc = None
         self.build_model()

@@ -1,8 +1,13 @@
-import os
-import torch
+# -*- coding: utf-8 -*-
+"""
+Created on Jan 18 16:47 2019
+
+@author: Denis Tome'
+
+Base model class.
+"""
 import logging
 import torch.nn as nn
-from torch.autograd import Variable
 import numpy as np
 
 
@@ -12,12 +17,9 @@ class BaseModel(nn.Module):
     """
 
     def __init__(self):
-        super(BaseModel, self).__init__()
+        super().__init__()
         self.model = None
         self._logger = logging.getLogger(self.__class__.__name__)
-
-    def build_model(self):
-        raise NotImplementedError
 
     def forward(self, x):
         raise NotImplementedError
