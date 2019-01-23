@@ -23,7 +23,9 @@ __all__ = [
     'write_h5',
     'read_h5',
     'metadata_to_json',
-    'json_to_metadata'
+    'json_to_metadata',
+    'get_sub_dirs',
+    'get_files'
 ]
 
 
@@ -143,7 +145,7 @@ def write_h5(path, data):
     """
     Save data in h5 file format
     :param path: output file path
-    :param data: dictionary
+    :param data: list, array or dictionary
     """
     if '.h5' not in path[-3:]:
         path += '.h5'
@@ -155,6 +157,8 @@ def write_h5(path, data):
             if type(v[0]) == str:
                 v = [a.encode('utf8') for a in v]
             hf.create_dataset(k, data=v)
+    elif isinstance(data, list):
+        hf.create_dataset('val', data=data)
     elif isinstance(data, np.ndarray):
         hf.create_dataset('val', data=data)
     else:
@@ -193,3 +197,62 @@ def metadata_to_json(file_path, info):
     :param info: data
     """
     utils.write_json(file_path, info)
+
+
+def get_sub_dirs(path):
+    """
+    Get directories in path dir
+    :param path
+    :return: list of dirs
+    """
+    try:
+        dirs = os.walk(path).next()[1]
+    except AttributeError:
+        try:
+            dirs = next(os.walk(path))[1]
+        except:
+            dirs = []
+
+    dirs.sort()
+    dir_paths = [os.path.join(path, dir) for dir in dirs]
+
+    return dirs, dir_paths
+
+
+def get_files(dir, formats):
+    """
+    Get the file path for all the files contained in the
+    provided dir with the specific format.
+    :param dir: dir path
+    :param formats: file format
+    :return: list of file paths
+    """
+    _, sub_dirs = get_sub_dirs(dir)
+    if sub_dirs:
+        list_paths = []
+        list_names = []
+        for sub_dir in sub_dirs:
+            paths, names = get_files(sub_dir, formats)
+            list_paths.extend(paths)
+            list_names.extend(names)
+        return list_paths, list_names
+
+    if isinstance(formats, str):
+        formats = [formats]
+    else:
+        assert (isinstance(formats, list))
+
+    file_names = []
+    file_paths = []
+    for format in formats:
+        if format != '*':
+            files = [f for f in os.listdir(dir)
+                     if re.match(r'.*\.{}'.format(format), f)]
+        else:
+            files = os.listdir(dir)
+        files.sort()
+
+        file_names.extend([f.replace('.{}'.format(format), '') for f in files])
+        file_paths.extend([os.path.join(dir, f) for f in files])
+
+    return file_paths, file_names

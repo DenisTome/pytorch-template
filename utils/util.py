@@ -26,6 +26,7 @@ def ensure_dir(path):
     """
     if not os.path.exists(path):
         os.makedirs(path)
+    return path
 
 
 def check_different(list_a, list_b):

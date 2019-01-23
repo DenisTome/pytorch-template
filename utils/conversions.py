@@ -14,7 +14,8 @@ __all__ = [
     'standardize_pose',
     'standardize_poses',
     'standardize_synthetic_3d_pose',
-    'channel_first_to_channel_last'
+    'channel_first_to_channel_last',
+    'encode_str_utf8'
 ]
 
 
@@ -136,3 +137,12 @@ def standardize_synthetic_3d_pose(pose):
     # from cm to m
     pose /= 100
     return pose
+
+
+def encode_str_utf8(string):
+    """
+    Convert string in utf8 format
+    :param string
+    :return: converted string
+    """
+    return string.encode('utf8')
