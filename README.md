@@ -8,10 +8,10 @@ python main.py
 ```
 The default arguments list is shown below:
 ```
-usage: main.py [-h] [-b BATCH_SIZE] [-e EPOCHS] [--resume RESUME]
-               [--verbosity VERBOSITY] [--save-dir SAVE_DIR]
-               [--save-freq SAVE_FREQ] [--data-dir DATA_DIR]
-               [--validation-split VALIDATION_SPLIT] [--no-cuda]
+usage: train.py [-h] [-b BATCH_SIZE] [-e EPOCHS] [--resume RESUME]
+                [--verbosity VERBOSITY] [--save-dir SAVE_DIR]
+                [--save-freq SAVE_FREQ] [--data-dir DATA_DIR]
+                [--validation-split VALIDATION_SPLIT] [--no-cuda]
 
 PyTorch Template
 

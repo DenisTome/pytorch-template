@@ -1,5 +1,10 @@
+# directories
 __pycache__/
 .idea/
 saved/
 data/
 datasets/
+
+# files
+.*~
+
