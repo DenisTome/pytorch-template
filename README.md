@@ -103,5 +103,7 @@ avoid to re-parse the entire set of files contained in the directory and speed u
 the data loader class creation.
 - **t_sne**: this script generates an `output.h5` file containing the data given
 as input projected into a lower dimensional space (2 or 3) to be able to plot it and
-visualize the distribution. 
+visualize the distribution.
+- **numerate_frames**: this script adds number to frames and it's very usefull when
+we want to locate which is the corresponding frame we are visualizing in a video.
 
