@@ -19,10 +19,7 @@ class BaseDataset(FrameworkClass, Dataset):
         self.path = utils.abs_path(path)
         self.data_dir = utils.get_dir(path)
 
-    def __iter__(self):
-        raise NotImplementedError()
-
-    def __next__(self):
+    def __getitem__(self, index):
         raise NotImplementedError()
 
     def __len__(self):

@@ -1,10 +1,8 @@
 # -*- coding: utf-8 -*-
 """
-Created on Jan 18 17:32 2019
+Example of Dataset definition class
 
 @author: Denis Tome'
-
-Example of Dataset definition class
 
 """
 import utils
@@ -16,13 +14,20 @@ __all__ = [
 
 
 class Dataset(BaseDataset):
+    """Dataset"""
 
-    def __init__(self, data_path, transform=None):
+    def __init__(self, path, transform=None):
+        """Initialization
+
+        Arguments:
+            path {str} -- path to the data
+
+        Keyword Arguments:
+            transform {FrameworkClass} -- transformation to apply to
+                                          the data (default: {None})
         """
-        :param data_path: Path to data either as file or dir
-        :param transform: transformations to apply to the data
-        """
-        super().__init__(data_path)
+
+        super().__init__(path)
 
         # Load data from file or dir
         self.data_files = None
@@ -31,15 +36,20 @@ class Dataset(BaseDataset):
         self.batch_idx = 0
 
     def __len__(self):
+        """Get number of elements in the dataset"""
+
         return len(self.data_files)
 
     def _get_data(self, idx):
+        """Load data from the list
+
+        Arguments:
+            idx {int} -- sample index
+
+        Returns:
+            undefined -- whatever is needed
         """
-        Load data from the list of possible samples
-        in position idx.
-        :param idx: index of the data
-        :return: processed data
-        """
+
         data = utils.read_h5(self.data_files[idx])
 
         # just an example
@@ -49,6 +59,15 @@ class Dataset(BaseDataset):
         return img, label
 
     def __getitem__(self, idx):
+        """Get sample
+
+        Arguments:
+            idx {int} -- sample id
+
+        Returns:
+            undefined -- whatever is needed
+        """
+
         img, gt = self._get_data(idx)
 
         if self.transform:

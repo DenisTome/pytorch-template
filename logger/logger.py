@@ -8,8 +8,8 @@ Created on Jun 12 06:38 2018
 import os
 import torch
 from torch.autograd import Variable
-from utils.util import ensure_dir
 from tensorboardX import SummaryWriter
+from utils.io import ensure_dir
 
 __all__ = [
     'Logger',
@@ -17,7 +17,7 @@ __all__ = [
 ]
 
 
-class Logger(object):
+class Logger:
     """
     Logger, used by BaseTrainer to save training history
     """
@@ -33,10 +33,17 @@ class Logger(object):
             os.path.join(self.dir_path, 'val'), comment=self.training_name)
 
     def add_graph_definition(self, model):
+        """Add graph
+
+        Arguments:
+            model {Model} -- model
+        """
+
         dummy_input = Variable(torch.rand(1, 3, 224, 224))
         self.train.add_graph(model, dummy_input)
 
     def close_all(self):
+        """Close"""
         self.train.close()
         self.val.close()
 
@@ -55,4 +62,5 @@ class SingleLogger(object):
             os.path.join(self.dir_path, self.training_name), comment=self.training_name)
 
     def close_all(self):
+        """Close"""
         self.train.close()
