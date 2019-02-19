@@ -12,20 +12,20 @@ Usage:
 """
 
 import os
-import utils
 import logging
 import argparse
+import utils
 
-_logger = logging.getLogger('main')
+_LOGGER = logging.getLogger('main')
 
-parser = argparse.ArgumentParser(description='Dataset indexer')
-parser.add_argument(
+PARSER = argparse.ArgumentParser(description='Dataset indexer')
+PARSER.add_argument(
     '-i',
     '--path',
     required=True,
     type=str,
     help='path to the directory containing the dataset')
-parser.add_argument(
+PARSER.add_argument(
     '-f',
     '--format',
     default='all',
@@ -33,53 +33,59 @@ parser.add_argument(
     help='format of the files to be indexed (default: all)')
 
 
-def index_files(data_path, format):
+def index_files(data_path, file_format):
+    """Index files for faster dataset loading time
+
+    Arguments:
+        data_path {str} -- path to directory containing files
+        file_format {str} -- format of the files that are indexed
+
+    Returns:
+        list -- file paths
     """
-    Index files according to format
-    :param data_path: path to the directory
-    :param format
-    :return: list of paths and file names
-    """
-    if len(format) > 5:
-        _logger.error('File format cannot be more than 5 characters...')
+
+    if len(file_format) > 5:
+        _LOGGER.error('File format cannot be more than 5 characters...')
         exit()
 
-    _format = '*'
-    if format != 'all':
-        if format.find('.') > -1:
-            _format = format.replace('.', '')
+    search_format = '*'
+    if file_format != 'all':
+        if file_format.find('.') > -1:
+            search_format = file_format.replace('.', '')
         else:
-            _format = format
+            search_format = file_format
 
-    file_paths, _ = utils.get_files(data_path, _format)
+    file_paths, _ = utils.get_files(data_path, search_format)
 
     return file_paths
 
 
 def main(args):
+    """Main"""
+
     # checking that is in the right format
-    _data_dir = args.path
-    if _data_dir[-1] == '/':
-        _data_dir = _data_dir[:-1]
+    data_dir = args.path
+    if data_dir[-1] == '/':
+        data_dir = data_dir[:-1]
 
     # making sure that the directory exists
     if not os.path.isdir(args.path):
-        _logger.error('Directory {} does not exist...'.format(_data_dir))
+        _LOGGER.error('Directory %s does not exist...', data_dir)
         exit()
 
     # generating list
-    _logger.info('Indexing dataset...')
-    paths = index_files(_data_dir, args.format)
-    _list_utf8 = [utils.encode_str_utf8(p) for p in paths]
+    _LOGGER.info('Indexing dataset...')
+    paths = index_files(data_dir, args.format)
+    list_utf8 = [utils.encode_str_utf8(p) for p in paths]
 
     # creating file
-    _logger.info('Saving index file...')
-    index_path = '{}/index.h5'.format(_data_dir)
-    utils.write_h5(index_path, _list_utf8)
+    _LOGGER.info('Saving index file...')
+    index_path = '{}/index.h5'.format(data_dir)
+    utils.write_h5(index_path, list_utf8)
 
-    _logger.info('File index.h5 created in {}'.format(_data_dir))
+    _LOGGER.info('File index.h5 created in %s', data_dir)
+
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO)
-    main(parser.parse_args())
-
+    main(PARSER.parse_args())
