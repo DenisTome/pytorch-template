@@ -1,17 +1,18 @@
 # -*- coding: utf-8 -*-
 """
-Created on Jun 12 06:38 2018
+Train model
 
 @author: Denis Tome'
 
 """
-import utils
 import datetime
 from base.base_trainer import BaseTrainer
+from utils.draw import Drawer, Style
 
 __all__ = [
     'Trainer'
 ]
+
 
 class Trainer(BaseTrainer):
     """
@@ -38,6 +39,7 @@ class Trainer(BaseTrainer):
         self.reg_weights = reg_weights
         self.description = description
         self.len_trainset = len(self.data_loader)
+        self.drawer = Drawer(Style.EQ_AXES)
 
     def _summary_info(self):
         """
@@ -61,12 +63,15 @@ class Trainer(BaseTrainer):
         return info
 
     def _train_epoch(self, epoch):
-        """
-        Train an epoch
+        """Train model for one epoch
 
-        :param epoch: Current training epoch.
-        :return: A log that contains all information you want to save.
+        Arguments:
+            epoch {int} -- epoch number
+
+        Returns:
+            float -- epoch error
         """
+
         self.model.train()
         if self.with_cuda:
             self.model.cuda()
@@ -104,8 +109,9 @@ class Trainer(BaseTrainer):
 
                 for rid, reg in enumerate(self.regularizer):
                     self.model_logger.train.add_scalar('regularizer/{}'.format(reg.__name__),
-                                                       reg_values[rid].data.cpu().item(),
-                                                       self.global_step)
+                                                       reg_values[rid].data.cpu(
+                    ).item(),
+                        self.global_step)
 
                 for metric in self.metrics:
                     y_output = data.data.cpu().numpy()
@@ -119,7 +125,7 @@ class Trainer(BaseTrainer):
                 y_output = data.data.cpu().numpy()
                 y_target = target.data.cpu().numpy()
 
-                img_poses = utils.plot_poses(y_output[0], y_target[0])
+                img_poses = self.drawer.poses_3d(y_output[0], y_target[0])
                 self.model_logger.train.add_image('3d_poses',
                                                   img_poses,
                                                   self.global_step)
@@ -153,7 +159,7 @@ class Trainer(BaseTrainer):
         avg_loss = total_loss / (batch_idx - self.start_iteration)
         self.model_logger.train.add_scalar('loss/epochs', avg_loss, epoch)
 
-        return avg_loss, batch_idx
+        return avg_loss
 
     def _valid_epoch(self):
         """

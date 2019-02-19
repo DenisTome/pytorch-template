@@ -95,7 +95,7 @@ class BaseTrainer(FrameworkClass):
             if self.verbosity:
                 self._logger.info('Training epoch %d of %d',
                                   epoch, self.epochs)
-            epoch_loss, _ = self._train_epoch(epoch)
+            epoch_loss = self._train_epoch(epoch)
             if self.eval_epoch:
                 self._logger.info('Evaluating epoch %d of %d',
                                   epoch, self.epochs)

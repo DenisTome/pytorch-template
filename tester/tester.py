@@ -1,15 +1,14 @@
 # -*- coding: utf-8 -*-
 """
-Created on Jun 05 16:17 2018
+Tester
 
 @author: Denis Tome'
 
 """
-import os
-import utils
 import numpy as np
 from base.base_tester import BaseTester
 from model.modules.metric import AvgPosesError
+import utils
 
 __all__ = [
     'Tester'
@@ -32,13 +31,15 @@ class Tester(BaseTester):
         self.metric = AvgPosesError()
 
     def save_res(self, pred, gt, info):
+        """Save results
+
+        Arguments:
+            pred {numpy array} -- prediction
+            gt {numpy array} -- ground truth
+            info {dict} -- additional information about the frame
+                           like location
         """
-        Save results in files
-        :param pred
-        :param gt
-        :param info: dictionary containing all info about the batch
-                     like path, file_name, etc.
-        """
+
         raise NotImplementedError()
 
     def test(self):
@@ -62,7 +63,8 @@ class Tester(BaseTester):
                 self._logger.info('Test, batch {:d}/{:d}'.format(
                     bid, len(self.test_data_loader)))
                 if overall_error is not None:
-                    self._logger.info('Error: {:.3f}'.format(np.mean(overall_error)))
+                    self._logger.info(
+                        'Error: {:.3f}'.format(np.mean(overall_error)))
 
             output = self.model(data)
 
@@ -75,5 +77,5 @@ class Tester(BaseTester):
             else:
                 overall_error = err
 
-        self._logger.info('Overall error: {}'.format(np.mean(overall_error)))
+        self._logger.info('Overall error: %.3f', np.mean(overall_error))
         utils.write_h5('res.h5', overall_error)

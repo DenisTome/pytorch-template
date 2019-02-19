@@ -1,21 +1,25 @@
 # -*- coding: utf-8 -*-
 """
-Created on Jan 18 17:32 2019
+Custom loss
 
 @author: Denis Tome'
+
 """
 import torch
 
 
 def ae_loss(predicted, target):
+    """Custom loss used when both prediction
+    and target comes from the model
+
+    Arguments:
+        predicted {tensor} -- pytorch tensor
+        target {tensor} -- pytorch tensor
+
+    Returns:
+        tensor -- loss
     """
-    Loss to be used specifically when both inputs
-    of this functions are output of the network
-    (very useful for unsupervised learning)
-    :param predicted
-    :param target
-    :return: loss
-    """
+
     diff = torch.pow(predicted.view_as(target) - target, 2)
     loss = torch.sum(diff, dim=2)
     return torch.mean(loss)

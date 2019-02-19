@@ -1,8 +1,9 @@
 # -*- coding: utf-8 -*-
 """
-Created on Jan 18 17:32 2019
+Custom metric
 
 @author: Denis Tome'
+
 """
 import numpy as np
 from base.base_metric import BaseMetric
@@ -16,14 +17,17 @@ class AvgPoseError(BaseMetric):
     """
 
     def eval(self, pred, gt):
-        """
-        :param **kwargs:
-        :param pred: 3D pose given as input
-        :param gt: 3D gt pose
-        :return: average 3D error of the pose
-        """
-        overall_err = 0.0
+        """Evaluate
 
+        Arguments:
+            pred {numpy array} -- prediction
+            gt {numpy arrat} -- ground truth
+
+        Returns:
+            float -- error
+        """
+
+        overall_err = 0.0
         pid = 0
         for pose_in, pose_target in zip(pred, gt):
             error = compute_3d_joint_error(pose_in,

@@ -1,11 +1,9 @@
 # -*- coding: utf-8 -*-
 """
-Created on Sep 11 11:19 2018
+Set of custom layers that increase the convergence rate
+when training a model
 
 @author: Denis Tome'
-
-Set of custom layers that increase the convergence rate
-when training a model.
 
 """
 import math
@@ -22,6 +20,8 @@ __all__ = [
 
 
 class LinearWN(nn.Linear):
+    """LineaerWN"""
+
     def __init__(self, in_features, out_features, bias=True):
         super(LinearWN, self).__init__(in_features, out_features, bias)
         self.g = nn.Parameter(torch.ones(out_features))
@@ -32,6 +32,8 @@ class LinearWN(nn.Linear):
 
 
 class ConvTranspose2dWNUB(nn.ConvTranspose2d):
+    """ConvTranspose2dWNUB"""
+
     def __init__(self, in_channels, out_channels, height, width, kernel_size,
                  stride=1, padding=0, dilation=1, groups=1, bias=False):
         super(ConvTranspose2dWNUB, self).__init__(in_channels, out_channels, kernel_size, stride,
@@ -47,6 +49,8 @@ class ConvTranspose2dWNUB(nn.ConvTranspose2d):
 
 
 class Conv2dWNUB(nn.Conv2d):
+    """Conv2dWNUB"""
+
     def __init__(self, in_channels, out_channels, height, width, kernel_size,
                  stride=1, padding=0, dilation=1, groups=1, bias=False):
         super(Conv2dWNUB, self).__init__(in_channels, out_channels, kernel_size, stride,
@@ -62,6 +66,8 @@ class Conv2dWNUB(nn.Conv2d):
 
 
 def glorot(m, alpha):
+    """Initializer"""
+
     gain = math.sqrt(2. / (1. + alpha ** 2))
 
     if isinstance(m, nn.Conv2d):
