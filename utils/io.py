@@ -8,11 +8,11 @@ import re
 import os
 import json
 import h5py
-import utils
 import numpy as np
 
 __all__ = [
     'get_checkpoint',
+    'ensure_dir',
     'get_filename_from_path',
     'file_exists',
     'write_json',
@@ -22,108 +22,155 @@ __all__ = [
     'remove_files',
     'write_h5',
     'read_h5',
-    'metadata_to_json',
-    'json_to_metadata',
     'get_sub_dirs',
     'get_files'
 ]
 
 
-def get_checkpoint(resume_dir, epoch=None, iteration=None):
+def get_checkpoint(resume_dir):
+    """Get checkpoint
+
+    Arguments:
+        resume_dir {str} -- path to the dir containing the checkpoint
+
+    Raises:
+        IOError -- No checkpoint has been found
+
+    Returns:
+        str -- path to the checkpoint
     """
-    Retrieve checkpoint
-    :param resume_dir: directory with saved models
-    :param epoch: if not specified is the last one
-    :param iteration: if not specified is the last one
-    :return: path
-    """
+
     models_list = [
         f for f in os.listdir(resume_dir) if f.endswith(".pth.tar")
     ]
     models_list.sort()
 
     if not models_list:
-        raise IOError('Directory {} does not contain any model'.format(resume_dir))
+        raise IOError(
+            'Directory {} does not contain any model'.format(resume_dir))
 
     model_name = models_list[-2]
-    if epoch is not None:
-        # getting the right model
-        r = re.compile("ckpt_eph{:02d}_iter.*".format(epoch))
-        model_name = [
-            m.group(0) for l in models_list for m in [r.search(l)] if m
-        ]
-        model_name = model_name[0]
-
-        if iteration is not None:
-            r = re.compile("ckpt_eph{:02d}_iter{:06d}_.*".format(epoch, iteration))
-            model_name = [
-                m.group(0) for l in models_list for m in [r.search(l)] if m
-            ]
-            model_name = model_name[0]
-
-        if not model_name:
-            raise Exception('Model {}/ckpt_eph{:02d}_iter{:06d} does not exist'.format(
-                resume_dir, epoch, iteration))
 
     return os.path.join(resume_dir, model_name)
 
 
+def ensure_dir(path):
+    """Make sure directory exists, otherwise
+    create it.
+
+    Arguments:
+        path {str} -- path to the directory
+
+    Returns:
+        str -- path to the directory
+    """
+
+    if not os.path.exists(path):
+        os.makedirs(path)
+    return path
+
+
 def get_filename_from_path(path):
+    """Get name of a file given the absolute or
+    relative path
+
+    Arguments:
+        path {str} -- path to the file
+
+    Returns:
+        str -- file name without format
     """
-    Get the filename given a path
-    :param path
-    :return: filename without format, format
-    """
+
+    assert isinstance(path, str)
     file_with_format = os.path.split(path)[-1]
     file_format = re.findall(r'\.[a-zA-Z]+', file_with_format)[-1]
     file_name = file_with_format.replace(file_format, '')
+
     return file_name, file_format
 
 
 def file_exists(path):
+    """Check if file exists
+
+    Arguments:
+        path {str} -- path to the file
+
+    Returns:
+        bool -- True if file exists
     """
-    Check if the file exists
-    :param path
-    :return: bool
-    """
+
+    assert isinstance(path, str)
     return os.path.exists(path)
 
 
-def write_json(file_path, info):
+def write_json(path, data):
+    """Save data into a json file
+
+    Arguments:
+        path {str} -- path where to save the file
+        data {serializable} -- data to be stored
     """
-    Save to json file
-    :param file_path
-    :param info: data
-    """
-    with open(file_path, 'w') as out_file:
-        json.dump(info, out_file, indent=2)
+
+    assert isinstance(path, str)
+    with open(path, 'w') as out_file:
+        json.dump(data, out_file, indent=2)
 
 
-def read_from_json(file_path):
+def read_from_json(path):
+    """Read data from json file
+
+    Arguments:
+        path {str} -- path to json file
+
+    Raises:
+        IOError -- File not found
+
+    Returns:
+        dict -- dictionary containing data
     """
-    Retrieve from json file
-    :param file_path
-    """
-    with open(file_path, 'r') as in_file:
+
+    assert isinstance(path, str)
+    if '.json' not in path:
+        raise IOError('Path does not point to a json file')
+
+    with open(path, 'r') as in_file:
         data = json.load(in_file)
 
     return data
 
 
 def abs_path(path):
+    """Get absolute path of a relative one
+
+    Arguments:
+        path {str} -- relative path
+
+    Raises:
+        NameError -- String is empty
+
+    Returns:
+        str -- absolute path
     """
-    Get absolute path
-    """
+
+    assert isinstance(path, str)
     if path:
         return os.path.expanduser(path)
 
-    return None
+    raise NameError('Path is empty...')
 
 
 def get_dir(path):
+    """Get directory name from absolute or
+    relative path
+
+    Arguments:
+        path {str} -- path to directory
+
+    Returns:
+        str -- directory name
     """
-    Get directory from path
-    """
+
+    assert isinstance(path, str)
     if '.' in path[-4:]:
         name = path.split('/')[-1]
         dir_name = path.replace('/{}'.format(name), '')
@@ -133,20 +180,28 @@ def get_dir(path):
 
 
 def remove_files(paths):
+    """Delete files
+
+    Arguments:
+        paths {list} -- list of paths
     """
-    Remove files given their path
-    :param paths: list of paths
-    """
+
+    assert isinstance(paths, list)
     for path in paths:
         os.remove(path)
 
 
 def write_h5(path, data):
+    """Write h5 file
+
+    Arguments:
+        path {str} -- file path where to save the data
+        data {seriaizable} -- data to be saved
+
+    Raises:
+        NotImplementedError -- non serializable data to save
     """
-    Save data in h5 file format
-    :param path: output file path
-    :param data: list, array or dictionary
-    """
+
     if '.h5' not in path[-3:]:
         path += '.h5'
 
@@ -167,7 +222,18 @@ def write_h5(path, data):
 
 
 def read_h5(path):
-    """Load data"""
+    """Load data from h5 file
+
+    Arguments:
+        path {str} -- file path
+
+    Raises:
+        FileNotFoundError -- Path not pointing to a file
+
+    Returns:
+        dict -- dictionary containing the data
+    """
+
     if not os.path.isfile(path):
         raise FileNotFoundError()
 
@@ -182,35 +248,23 @@ def read_h5(path):
     return data_files
 
 
-def json_to_metadata(file_path):
-    """
-    Retrieve metadata from json file
-    :param file_path
-    """
-    return utils.read_from_json(file_path)
-
-
-def metadata_to_json(file_path, info):
-    """
-    Save metadata to json file
-    :param file_path
-    :param info: data
-    """
-    utils.write_json(file_path, info)
-
-
 def get_sub_dirs(path):
+    """Get sub-directories contained in a specified directory
+
+    Arguments:
+        path {str} -- path to directory
+
+    Returns:
+        name, paths -- list of names and path of the
+                       sub-directories
     """
-    Get directories in path dir
-    :param path
-    :return: list of dirs
-    """
+
     try:
         dirs = os.walk(path).next()[1]
     except AttributeError:
         try:
             dirs = next(os.walk(path))[1]
-        except:
+        except StopIteration:
             dirs = []
 
     dirs.sort()
@@ -219,40 +273,47 @@ def get_sub_dirs(path):
     return dirs, dir_paths
 
 
-def get_files(dir, formats):
+def get_files(path, file_format):
+    """Get file paths of files contained in
+    a given directory according to the format
+
+    Arguments:
+        path {str} -- path to the directory containing the files
+        file_format {list | str} -- list or single format
+
+    Returns:
+        paths, names -- lists of paths and names
     """
-    Get the file path for all the files contained in the
-    provided dir with the specific format.
-    :param dir: dir path
-    :param formats: file format
-    :return: list of file paths
-    """
-    _, sub_dirs = get_sub_dirs(dir)
+
+    if isinstance(file_format, str):
+        file_format = [file_format]
+    else:
+        assert isinstance(file_format, list)
+
+    # get sub-directories files
+    _, sub_dirs = get_sub_dirs(path)
     if sub_dirs:
         list_paths = []
         list_names = []
         for sub_dir in sub_dirs:
-            paths, names = get_files(sub_dir, formats)
+            paths, names = get_files(sub_dir, file_format)
             list_paths.extend(paths)
             list_names.extend(names)
         return list_paths, list_names
 
-    if isinstance(formats, str):
-        formats = [formats]
-    else:
-        assert (isinstance(formats, list))
-
+    # get current files
     file_names = []
     file_paths = []
-    for format in formats:
-        if format != '*':
-            files = [f for f in os.listdir(dir)
-                     if re.match(r'.*\.{}'.format(format), f)]
+    for f_format in file_format:
+        if f_format != '*':
+            files = [f for f in os.listdir(path)
+                     if re.match(r'.*\.{}'.format(f_format), f)]
         else:
-            files = os.listdir(dir)
+            files = os.listdir(path)
         files.sort()
 
-        file_names.extend([f.replace('.{}'.format(format), '') for f in files])
-        file_paths.extend([os.path.join(dir, f) for f in files])
+        file_names.extend([f.replace('.{}'.format(f_format), '')
+                           for f in files])
+        file_paths.extend([os.path.join(path, f) for f in files])
 
     return file_paths, file_names

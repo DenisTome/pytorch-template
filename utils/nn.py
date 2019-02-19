@@ -11,6 +11,15 @@ __all__ = [
 
 
 def get_optimizer_lr(optimizer):
+    """Get learning-rate from optimizer
+
+    Arguments:
+        optimizer {Optimizer} -- torch optimizer
+
+    Returns:
+        float -- learning rate
+    """
+
     lr = None
     for param_group in optimizer.param_groups:
         lr = param_group['lr']

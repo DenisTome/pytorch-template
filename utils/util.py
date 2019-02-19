@@ -5,38 +5,27 @@ Created on Jun 08 15:16 2018
 @author: Denis Tome'
 """
 import re
-import os
 from copy import copy
 import numpy as np
 
 __all__ = [
-    'ensure_dir',
     'check_different',
     'is_model_parallel',
     'split_validation'
 ]
 
 
-def ensure_dir(path):
-    """
-    Make sure that directory exists at the specified
-    path. If it doesn't, it's created.
-
-    :param path: path of the directory to check
-    """
-    if not os.path.exists(path):
-        os.makedirs(path)
-    return path
-
-
 def check_different(list_a, list_b):
+    """Check differences in two lists
+
+    Arguments:
+        list_a {list} -- first list
+        list_b {list} -- second list
+
+    Returns:
+        list -- list containing the differences
     """
-    Given two lists it identifies the files that are different
-    assuming one list is a sub-set of the other
-    :param list_a
-    :param list_b
-    :return: list
-    """
+
     diff = []
     num = np.max([len(list_a), len(list_b)])
     idx_a = 0
@@ -59,13 +48,16 @@ def check_different(list_a, list_b):
 
 
 def is_model_parallel(checkpoint):
+    """Check if a model has been saved as parallel
+
+    Arguments:
+        checkpoint {dict} -- dictionary saved according to
+                             the base_trainer format
+
+    Returns:
+        bool -- True if it is saved as parallel
     """
-    Check if a model has been saved in the checkpoint as a DataParallel
-    object or a simple model. This changes tha naming convention
-    for the layers: module.layer_name instead of layer_name
-    :param checkpoint: dictionary with all the model info
-    :return: True if saved as DataParallel
-    """
+
     saved_name = list(checkpoint['state_dict'].keys())[0]
     parallel = len(re.findall('module.*', saved_name))
 
@@ -73,6 +65,19 @@ def is_model_parallel(checkpoint):
 
 
 def split_validation(data_loader, validation_split, randomized=True):
+    """Split dataset into train and validation set
+
+    Arguments:
+        data_loader {DataLoader} -- pytorch data loader
+        validation_split {float} -- percentage of validation set
+
+    Keyword Arguments:
+        randomized {bool} -- randomized splitting (default: {True})
+
+    Returns:
+        TrainLoader, ValidationLoader -- splitted data loaders
+    """
+
     if validation_split == 0.0:
         return data_loader, None
     valid_data_loader = copy(data_loader)
