@@ -1,13 +1,15 @@
 # -*- coding: utf-8 -*-
 """
-Created on Jan 18 16:49 2019
+Framework class to be used to extend all
+the other classes
 
 @author: Denis Tome'
 
 """
 import logging
 
-class FrameworkClass(object):
+class FrameworkClass:
+    """Framework Class"""
 
     def __init__(self):
         super().__init__()

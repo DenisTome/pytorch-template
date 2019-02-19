@@ -110,10 +110,10 @@ class Trainer(BaseTrainer):
                 for metric in self.metrics:
                     y_output = data.data.cpu().numpy()
                     y_target = target.data.cpu().numpy()
-                    metric.log(inputs=y_output,
-                               targets=y_target,
+                    metric.log(pred=y_output,
+                               gt=y_target,
                                logger=self.model_logger.train,
-                               iter=self.global_step)
+                               iteration=self.global_step)
 
             if (batch_idx % self.img_log_step) == 0 and self.img_log_step > -1:
                 y_output = data.data.cpu().numpy()
@@ -138,7 +138,7 @@ class Trainer(BaseTrainer):
 
                 for i, metric in enumerate(self.metrics):
                     metric.log_res(logger=self.model_logger.val,
-                                   iter=self.global_step,
+                                   iteration=self.global_step,
                                    error=val_metrics[i])
 
                 self._update_summary(self.global_step,

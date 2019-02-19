@@ -1,25 +1,24 @@
 # -*- coding: utf-8 -*-
 """
-Created on Jun 05 16:17 2018
+Base trainer class
 
 @author: Denis Tome'
-
-Base trainer class.
 
 """
 import os
 import math
 import shutil
-import torch
-import utils
-import logging
 import collections
+import torch
+from torch.autograd import Variables
 import numpy as np
 from logger.logger import Logger
-from torch.autograd import Variable
+import utils.io as io
+from utils import is_model_parallel
+from base.template import FrameworkClass
 
 
-class BaseTrainer:
+class BaseTrainer(FrameworkClass):
     """
     Base class for all trainers
     """
@@ -28,7 +27,7 @@ class BaseTrainer:
                  save_dir, save_freq, with_cuda, resume, verbosity,
                  train_log_step, verbosity_iter, reset=False, eval_epoch=False):
 
-        self._logger = logging.getLogger(self.__class__.__name__)
+        super().__init__()
 
         self.model = model
         self.loss = loss
@@ -59,22 +58,25 @@ class BaseTrainer:
 
         if self.with_cuda and (torch.cuda.device_count() > 1):
             if self.verbosity:
-                self._logger.info("Let's use {} GPUs!".format(
-                    torch.cuda.device_count())
-                )
+                self._logger.info("Let's use %d GPUs!",
+                                  torch.cuda.device_count())
             self.single_gpu = False
             self.model = torch.nn.DataParallel(self.model)
 
-        utils.ensure_dir(os.path.join(save_dir, self.training_name))
+        io.ensure_dir(os.path.join(save_dir, self.training_name))
         if resume:
             self._resume_checkpoint(resume)
 
     def _get_var(self, var):
+        """Generate variable based on CUDA availability
+
+        Arguments:
+            var {undefined} -- variable to be converted
+
+        Returns:
+            tensor -- pytorch tensor
         """
-        Generate variable to be used by cuda
-        :param var
-        :return var to be used by cuda
-        """
+
         var = torch.FloatTensor(var)
         var = Variable(var)
 
@@ -84,17 +86,19 @@ class BaseTrainer:
         return var
 
     def train(self):
+        """Train model"""
+
         self._dump_summary_info()
         if self.with_cuda:
             self.model.cuda()
         for epoch in range(self.start_epoch, self.epochs + 1):
             if self.verbosity:
-                self._logger.info('Training epoch {:d} of {:d}'.format(
-                    epoch, self.epochs))
-            epoch_loss, max_iter = self._train_epoch(epoch)
+                self._logger.info('Training epoch %d of %d',
+                                  epoch, self.epochs)
+            epoch_loss, _ = self._train_epoch(epoch)
             if self.eval_epoch:
-                self._logger.info('Evaluating epoch {:d} of {:d}'.format(
-                    epoch, self.epochs))
+                self._logger.info('Evaluating epoch %d of %d',
+                                  epoch, self.epochs)
                 epoch_val_loss, epoch_val_metrics = self._valid_epoch()
                 self.model_logger.val.add_scalar('loss/iterations', epoch_val_loss,
                                                  self.global_step)
@@ -105,18 +109,28 @@ class BaseTrainer:
                     self._save_checkpoint(epoch, self.global_step, epoch_loss)
 
     def _dump_summary_info(self):
+        """Save training summary"""
+
         info_file_path = os.path.join(self.save_dir,
                                       self.training_name,
                                       'INFO.json')
-        if not utils.file_exists(info_file_path):
+        if not io.file_exists(info_file_path):
             info = self._summary_info()
-            utils.write_json(info_file_path,
-                             info)
+            io.write_json(info_file_path,
+                          info)
         else:
-            info = utils.read_from_json(info_file_path)
+            info = io.read_from_json(info_file_path)
         self.training_info = info
 
     def _update_summary(self, global_step, loss, metrics):
+        """Update training summary details
+
+        Arguments:
+            global_step {int} -- global step in the training process
+            loss {float} -- loss value
+            metrics {Metric} -- metrics used for evaluating the model
+        """
+
         self.training_info['global_step'] = global_step
         self.training_info['val_loss'] = loss
         for idx, metric in enumerate(self.metrics):
@@ -128,8 +142,8 @@ class BaseTrainer:
         info_file_path = os.path.join(self.save_dir,
                                       self.training_name,
                                       'INFO.json')
-        utils.write_json(info_file_path,
-                         self.training_info)
+        io.write_json(info_file_path,
+                      self.training_info)
 
     def _train_epoch(self, epoch):
         raise NotImplementedError
@@ -141,6 +155,14 @@ class BaseTrainer:
         raise NotImplementedError
 
     def _save_checkpoint(self, epoch, iteration, loss):
+        """Save model
+
+        Arguments:
+            epoch {int} -- epoch number
+            iteration {int} -- iteration number
+            loss {float} -- loss value
+        """
+
         if loss < self.min_loss:
             self.min_loss = loss
         arch = type(self.model).__name__
@@ -164,20 +186,20 @@ class BaseTrainer:
                                          'model_best.pth.tar'))
 
     def _resume_checkpoint(self, resume_path):
-        """
-        Resume model saved in resume_path or if it's a directory
-        the last model contained in it/
+        """Resume model to be fine-tuned
 
-        :param resume_path: path to file or dir with the models
+        Arguments:
+            resume_path {str} -- path to the directory or model to be resumed
         """
+
         if not os.path.isfile(resume_path):
-            resume_path = utils.get_checkpoint(resume_path)
+            resume_path = io.get_checkpoint(resume_path)
 
-        self._logger.info("Loading checkpoint: {} ...".format(resume_path))
+        self._logger.info("Loading checkpoint: %s ...", resume_path)
         checkpoint = torch.load(resume_path)
         trained_dict = checkpoint['state_dict']
 
-        if utils.is_model_parallel(checkpoint):
+        if is_model_parallel(checkpoint):
             if self.single_gpu:
                 trained_dict = collections.OrderedDict((k.replace('module.', ''), val)
                                                        for k, val in checkpoint['state_dict'].items())
@@ -198,5 +220,5 @@ class BaseTrainer:
             self.min_loss = checkpoint['min_loss']
             self.optimizer.load_state_dict(checkpoint['optimizer'])
 
-        self._logger.info("Checkpoint '{}' (epoch {}) loaded".format(
-            resume_path, self.start_epoch))
+        self._logger.info("Checkpoint '%s' (epoch %d) loaded",
+                          resume_path, self.start_epoch)

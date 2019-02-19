@@ -7,7 +7,7 @@ Common constants used throughout the project
 """
 import socket
 from os.path import dirname, abspath, join
-from utils.util import ensure_dir
+from utils.io import ensure_dir
 
 __all__ = [
     'DATA_DIR',

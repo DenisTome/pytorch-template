@@ -3,6 +3,7 @@
 Created on Aug 03 18:50 2018
 
 @author: Denis Tome'
+
 """
 import cv2
 import numpy as np

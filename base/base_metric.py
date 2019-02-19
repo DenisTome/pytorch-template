@@ -1,61 +1,76 @@
 # -*- coding: utf-8 -*-
 """
-Created on Jun 25 15:56 2018
+Base metric class to be extended
 
 @author: Denis Tome'
 
 """
 from base.template import FrameworkClass
 
-__all__ = [
-    'BaseMetric'
-]
-
 
 class BaseMetric(FrameworkClass):
+    """Base Metric class"""
 
     def __init__(self):
-        """Create class"""
+        """Initialize class"""
         super().__init__()
         self.metric_init = 0.0
         self.name_format = self.__class__.__name__
 
     def eval(self, pred, gt):
-        """
-        Compute metric for a specific sample
-        :param pred: predictions
-        :param gt: ground truth
-        :param scale: scaling factor
-        :return: metric value (scala, list, etc. depending on the metric)
+        """Compute metric
+
+        Arguments:
+            pred {numpy array} -- predicted pose
+            gt {numpy array} -- ground truth pose
+
         """
         raise NotImplementedError('Abstract method in BaseMetric class...')
 
     def add_results(self, res, pred, gt):
+        """Update results
+
+        Arguments:
+            res {float} -- sum of past evaluations
+            pred {numpy array} -- predicted pose
+            gt {numpy array} -- ground truth pose
+
+        Returns:
+            float -- sum of evaluations
         """
-        Update results
-        :param res: metric computed ad previous step
-        :param pred: predictions
-        :param gt: ground truth
-        :return: updated metric value (scala, list, etc. depending on the metric)
-        """
+
         if res is None:
             res = self.metric_init
 
         return res + self.eval(pred, gt)
 
-    def log(self, logger, iter, inputs, targets=None):
+    def log(self, logger, iteration, pred, gt):
+        """Evaluate and add it to the log file
+
+        Arguments:
+            logger {Logger} -- class responsible for logging info
+            iteration {int} -- iteration number
+            pred {numpy array} -- prediction
+            gt {numpy array} -- ground truth
         """
-        Compute metric and add to the log file
-        """
-        error = self.eval(inputs, targets)
+
+        error = self.eval(pred, gt)
         self.log_res(logger,
-                     iter,
+                     iteration,
                      error)
 
-    def log_res(self, logger, iter, error):
+    def log_res(self, logger, iteration, error):
+        """Add result to log file
+
+        Arguments:
+            logger {Logger} -- class responsible for logging into
+            iteration {int} -- iteration number
+            error {float} -- error value
+        """
+
         logger.add_scalar('metrics/{0}'.format(self.name_format),
                           error,
-                          iter)
+                          iteration)
 
     def _desc(self, **kwargs):
         """
