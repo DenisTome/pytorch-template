@@ -8,6 +8,7 @@ Train model
 import datetime
 from base.base_trainer import BaseTrainer
 from utils.draw import Drawer, Style
+import utils
 
 __all__ = [
     'Trainer'
@@ -173,7 +174,6 @@ class Trainer(BaseTrainer):
 
         total_val_loss = 0
         total_val_metrics = [None] * len(self.metrics)
-        num_elems = len(self.valid_data_loader)
         batch_idx = 0
 
         for (data, target) in self.valid_data_loader:

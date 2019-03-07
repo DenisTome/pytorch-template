@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 """
-Created on Jun 12 06:38 2018
+ModelLogger class used for saving the progress
+during the training phase, by storing errors, images, etc.
 
 @author: Denis Tome'
 
@@ -12,12 +13,11 @@ from tensorboardX import SummaryWriter
 from utils.io import ensure_dir
 
 __all__ = [
-    'Logger',
-    'SingleLogger'
+    'ModelLogger',
 ]
 
 
-class Logger:
+class ModelLogger:
     """
     Logger, used by BaseTrainer to save training history
     """
@@ -46,21 +46,3 @@ class Logger:
         """Close"""
         self.train.close()
         self.val.close()
-
-
-class SingleLogger(object):
-    """
-    Logger, used by BaseTrainer to save training history
-    """
-
-    def __init__(self, dir_path, training_name):
-        self.dir_path = dir_path
-        ensure_dir(self.dir_path)
-        self.training_name = training_name
-
-        self.train = SummaryWriter(
-            os.path.join(self.dir_path, self.training_name), comment=self.training_name)
-
-    def close_all(self):
-        """Close"""
-        self.train.close()

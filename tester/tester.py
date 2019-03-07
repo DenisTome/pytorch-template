@@ -6,6 +6,7 @@ Tester
 
 """
 import numpy as np
+from tqdm import tqdm
 from base.base_tester import BaseTester
 from model.modules.metric import AvgPosesError
 import utils
@@ -55,17 +56,11 @@ class Tester(BaseTester):
             self.model.cuda()
 
         overall_error = None
-        for bid, (data, target, info) in enumerate(self.test_data_loader):
+        for (data, target, info) in tqdm(self.test_data_loader, unit='batch'):
             data = self._get_var(data)
             target = self._get_var(target)
 
-            if (bid % self.verbosity_iter == 0) & (self.verbosity == 2):
-                self._logger.info('Test, batch {:d}/{:d}'.format(
-                    bid, len(self.test_data_loader)))
-                if overall_error is not None:
-                    self._logger.info(
-                        'Error: {:.3f}'.format(np.mean(overall_error)))
-
+            # generete results
             output = self.model(data)
 
             output = output.data.cpu().numpy()

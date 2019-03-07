@@ -9,10 +9,10 @@ import os
 import math
 import shutil
 import collections
+from torch.autograd import Variable
 import torch
-from torch.autograd import Variables
 import numpy as np
-from logger.logger import Logger
+from logger.model_logger import ModelLogger
 import utils.io as io
 from utils import is_model_parallel
 from base.template import FrameworkClass
@@ -44,7 +44,7 @@ class BaseTrainer(FrameworkClass):
         self.min_loss = math.inf
         self.start_epoch = 0
         self.start_iteration = 0
-        self.model_logger = Logger(
+        self.model_logger = ModelLogger(
             os.path.join(save_dir, self.training_name, 'log'),
             self.training_name)
         self.training_info = None
