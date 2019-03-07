@@ -25,7 +25,7 @@ class Trainer(BaseTrainer):
                  save_dir, save_freq, resume, with_cuda, verbosity,
                  train_log_step, val_log_step, verbosity_iter,
                  reset=False, eval_epoch=False, lr_decay=None,
-                 valid_data_loader=None, description=None):
+                 valid_data_loader=None):
         super().__init__(model, loss, metrics, optimizer, epochs,
                          training_name, save_dir, save_freq, with_cuda, resume,
                          verbosity, train_log_step, verbosity_iter, reset, eval_epoch)
@@ -38,7 +38,6 @@ class Trainer(BaseTrainer):
         self.img_log_step = img_log_step
         self.regularizer = regularizer
         self.reg_weights = reg_weights
-        self.description = description
         self.len_trainset = len(self.data_loader)
         self.drawer = Drawer(Style.EQ_AXES)
 
@@ -59,8 +58,6 @@ class Trainer(BaseTrainer):
             info['lr_decay_mode'] = self.lr_decay.mode
         for rid, reg in enumerate(self.regularizer):
             info['reg_{}_weight'.format(reg.__name__)] = self.reg_weights[rid]
-        if self.description:
-            info['description'] = self.description
         return info
 
     def _train_epoch(self, epoch):

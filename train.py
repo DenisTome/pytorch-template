@@ -6,140 +6,27 @@ automatically assigned to the default value
 @author: Denis Tome'
 
 """
-import argparse
-import logging
+from parser.train_parser import TrainParser
 import torch.optim as optim
 from torch.utils.data import DataLoader
 from torchvision import transforms
 from model.model import Model
 from model.modules.loss import ae_loss as loss
 from model.modules.metric import AvgPoseError
-from model.modules.regularizer import limb_length
 from model.modules.lr_decay import LRDecay
+from logger.console_logger import ConsoleLogger
 from dataset_def import Dataset
 from dataset_def import Convert, ToTensor
 from trainer.trainer import Trainer
-from utils import CHKP_DIR
 
-_LOGGER = logging.getLogger('main')
-
-PARSER = argparse.ArgumentParser(description='Trainer')
-PARSER.add_argument(
-    '-lr',
-    '--learning-rate',
-    default=1e-4,
-    type=float,
-    help='learning rate')
-PARSER.add_argument(
-    '-b',
-    '--batch-size',
-    default=64,
-    type=int,
-    help='mini-batch size (default: 64)')
-PARSER.add_argument(
-    '-e',
-    '--epochs',
-    default=100,
-    type=int,
-    help='number of total epochs (default: 100)')
-PARSER.add_argument(
-    '-n',
-    '--training_name',
-    default='train',
-    type=str,
-    help='name of the training (default: train_AE)')
-PARSER.add_argument(
-    '--no-lr-decay',
-    action="store_true",
-    help='don\'t use learning rate decay')
-PARSER.add_argument(
-    '--lr_decay_rate',
-    default=0.95,
-    type=float,
-    help='learning rate decay rate (default = 0.95)')
-PARSER.add_argument(
-    '--lr_decay_step',
-    default=3000,
-    type=float,
-    help='learning rate decay step (default = 3000)')
-PARSER.add_argument(
-    '-r',
-    '--resume',
-    default='',
-    type=str,
-    help='path to latest checkpoint (default: none)')
-PARSER.add_argument(
-    '--verbosity',
-    default=2,
-    type=int,
-    help='verbosity, 0: quiet, 1: per epoch, 2: complete (default: 2)')
-PARSER.add_argument(
-    '--verbosity_iter',
-    default=250,
-    type=int,
-    help='after how many iterations to show info')
-PARSER.add_argument(
-    '--save-dir',
-    default=CHKP_DIR,
-    type=str,
-    help='directory of saved model (default: model/checkpoints)')
-PARSER.add_argument(
-    '--save-freq',
-    default=10000,
-    type=int,
-    help='training checkpoint frequency in number of iterations(default: 10000)')
-PARSER.add_argument(
-    '--img-log-step',
-    default=250,
-    type=int,
-    help='number of iterations for log images (default: 1000)')
-PARSER.add_argument(
-    '--train-log-step',
-    default=100,
-    type=int,
-    help='log frequency in number of iterations for training (default: 500)')
-PARSER.add_argument(
-    '--val-log-step',
-    default=250,
-    type=int,
-    help='log frequency in number of iterations for validation (default: 2000)')
-PARSER.add_argument(
-    '--train-path',
-    required=True,
-    type=str,
-    help='file/directory of training data')
-PARSER.add_argument(
-    '--val-path',
-    required=True,
-    type=str,
-    help='file/directory of validation data')
-PARSER.add_argument(
-    '--eval-epoch',
-    action="store_true",
-    help='flag to apply input noise during training')
-PARSER.add_argument(
-    '--num-threads',
-    default=8,
-    type=int,
-    help='number of threads for loading data (default: 8)')
-PARSER.add_argument(
-    '-d',
-    '--description',
-    default='',
-    type=str,
-    help='description of the training')
-PARSER.add_argument(
-    '--no-cuda',
-    action="store_true",
-    help='use CPU in case there\'s no GPU support')
-PARSER.add_argument(
-    '--reset',
-    action="store_true",
-    help='reset global information about previous model')
+LOGGER = ConsoleLogger('Main')
+PARSER = TrainParser('Trainer')
 
 
 def main(args):
     """Main"""
+
+    LOGGER.info('Staring training...')
 
     # Model
     model = Model()
@@ -147,8 +34,8 @@ def main(args):
 
     # Specifying loss function, metric(s), and optimizer
     metrics = [AvgPoseError()]
-    regularizers = [limb_length]
-    reg_weights = [args.lreg_weight]
+    regularizers = None
+    reg_weights = 0
 
     if not args.no_cuda:
         model.cuda()
@@ -169,7 +56,7 @@ def main(args):
     ])
 
     # Train-set
-    train_set = Dataset(args.train_path,
+    train_set = Dataset(args.input,
                         transform=data_transform)
     train_data_loader = DataLoader(train_set,
                                    batch_size=args.batch_size,
@@ -177,7 +64,7 @@ def main(args):
                                    num_workers=args.num_threads)
 
     # Val-set
-    val_set = Dataset(args.val_path,
+    val_set = Dataset(args.validation,
                       transform=data_transform)
     val_data_loader = DataLoader(val_set,
                                  batch_size=args.batch_size,
@@ -196,8 +83,8 @@ def main(args):
         reg_weights=reg_weights,
         lr_decay=lr_decay,
         epochs=args.epochs,
-        training_name=args.training_name,
-        save_dir=args.save_dir,
+        training_name=args.name,
+        save_dir=args.output,
         save_freq=args.save_freq,
         resume=args.resume,
         verbosity=args.verbosity,
@@ -208,13 +95,13 @@ def main(args):
         with_cuda=not args.no_cuda,
         reset=args.reset,
         eval_epoch=args.eval_epoch,
-        description=args.description
     )
 
     # Start training!
     trainer.train()
 
+    LOGGER.info('Done.')
+
 
 if __name__ == '__main__':
-    logging.basicConfig(level=logging.INFO)
-    main(PARSER.parse_args())
+    main(PARSER.get_arguments())
