@@ -6,7 +6,7 @@ Custom metric
 
 """
 import numpy as np
-from base.base_metric import BaseMetric
+from base import BaseMetric
 from utils import compute_3d_joint_error
 
 

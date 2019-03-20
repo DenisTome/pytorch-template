@@ -210,7 +210,7 @@ def write_h5(path, data):
 
     if isinstance(data, dict):
         for k, v in data.items():
-            if type(v[0]) == str:
+            if isinstance(v[0], str):
                 v = [a.encode('utf8') for a in v]
             hf.create_dataset(k, data=v)
     elif isinstance(data, list):

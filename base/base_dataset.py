@@ -6,16 +6,34 @@ depending on the different datasets.
 @author: Denis Tome'
 
 """
+import enum
 from torch.utils.data import Dataset
-from base.template import FrameworkClass
+from logger.console_logger import ConsoleLogger
 import utils
 
+__all__ = [
+    'BaseDataset',
+    'SubSet'
+]
 
-class BaseDataset(FrameworkClass, Dataset):
+
+class SubSet(enum.Enum):
+    """Type of subsets"""
+
+    train = 0
+    test = 1
+    val = 2
+
+
+class BaseDataset(Dataset):
     """Base dataset class"""
 
     def __init__(self, path):
         super().__init__()
+
+        logger_name = self.__class__.__name__
+        self._logger = ConsoleLogger(logger_name)
+
         self.path = utils.abs_path(path)
         self.data_dir = utils.get_dir(path)
 

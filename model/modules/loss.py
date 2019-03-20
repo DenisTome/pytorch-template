@@ -7,6 +7,10 @@ Custom loss
 """
 import torch
 
+__all__ = [
+    'ae_loss'
+]
+
 
 def ae_loss(predicted, target):
     """Custom loss used when both prediction

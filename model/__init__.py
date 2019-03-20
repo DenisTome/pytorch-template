@@ -5,3 +5,4 @@ Init file
 @author: Denis Tome'
 
 """
+from .model import Model

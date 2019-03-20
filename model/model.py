@@ -7,12 +7,14 @@ Created on Jan 18 17:32 2019
 Example of Model definition class
 
 """
-from base.base_model import BaseModel
 import torch.nn as nn
 import torch.nn.functional as F
+from base import BaseModel
 
 
 class Model(BaseModel):
+    """Model"""
+
     def __init__(self):
         super().__init__()
         self.cnn = None
@@ -20,6 +22,8 @@ class Model(BaseModel):
         self.build_model()
 
     def build_model(self):
+        """Building model"""
+        
         self.cnn = nn.Sequential(
             nn.Conv2d(1, 8, kernel_size=3, padding=1),
             nn.ReLU(inplace=True),

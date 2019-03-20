@@ -6,7 +6,7 @@ automatically assigned to the default value
 @author: Denis Tome'
 
 """
-from parser.train_parser import TrainParser
+from parser import TrainParser
 import torch.optim as optim
 from torch.utils.data import DataLoader
 from torchvision import transforms

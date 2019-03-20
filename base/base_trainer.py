@@ -51,6 +51,7 @@ class BaseTrainer(FrameworkClass):
         self.eval_epoch = eval_epoch
         self.reset = reset
         self.single_gpu = True
+        self.global_step = 0
 
         # check that we can run on GPU
         if not torch.cuda.is_available():

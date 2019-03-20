@@ -7,7 +7,7 @@ Transformations
 """
 import torch
 import numpy as np
-from base.template import FrameworkClass
+from base import FrameworkClass
 
 __all__ = [
     'ToTensor',

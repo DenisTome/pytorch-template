@@ -6,7 +6,7 @@ Example of Dataset definition class
 
 """
 import utils
-from base.base_dataset import BaseDataset
+from base import BaseDataset
 
 __all__ = [
     'Dataset'

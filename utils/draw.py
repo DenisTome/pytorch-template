@@ -1,19 +1,19 @@
 # -*- coding: utf-8 -*-
+import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
 """
 Created on Jun 06 17:42 2018
 
 @author: Denis Tome'
 
 """
-import logging
+from logger import ConsoleLogger
 from enum import Flag
 import cv2
 import numpy as np
 import matplotlib as mpl
 import utils
-mpl.use(utils.MPL_MODE)
-from mpl_toolkits.mplot3d import Axes3D
-import matplotlib.pyplot as plt
+mpl.use(utils.SETTINGS.mpl_mode)
 
 __all__ = [
     'Style',
@@ -61,7 +61,7 @@ class Drawer():
         """
 
         super().__init__()
-        self._logger = logging.getLogger(self.__class__.__name__)
+        self._logger = ConsoleLogger(self.__class__.__name__)
 
         self.bg_dark = False
         if bool(code & Style.BG_BLACK):

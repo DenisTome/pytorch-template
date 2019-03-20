@@ -7,10 +7,10 @@ Base model class
 """
 import torch.nn as nn
 import numpy as np
-from base.template import FrameworkClass
+from logger.console_logger import ConsoleLogger
 
 
-class BaseModel(nn.Module, FrameworkClass):
+class BaseModel(nn.Module):
     """
     Base class for all model
     """
@@ -18,7 +18,9 @@ class BaseModel(nn.Module, FrameworkClass):
     def __init__(self):
         super().__init__()
         self.model = None
+        
         self.name = self.__class__.__name__
+        self._logger = ConsoleLogger(self.__class__.__name__)
 
     def forward(self, x):
         raise NotImplementedError

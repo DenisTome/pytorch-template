@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Created on Jun 08 15:00 2018
+Custom controllers for training the model
 
 @author: Denis Tome'
 

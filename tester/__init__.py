@@ -3,6 +3,6 @@
 Init file
 
 @author: Denis Tome'
+
 """
-from .dataset import Dataset
-from .transformations import *
+from .tester import Tester
