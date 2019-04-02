@@ -10,10 +10,10 @@ from parser import TrainParser
 import torch.optim as optim
 from torch.utils.data import DataLoader
 from torchvision import transforms
-from model.model import Model
-from model.modules.loss import ae_loss as loss
-from model.modules.metric import AvgPoseError
-from model.modules.lr_decay import LRDecay
+from model import Model
+from model.modules import ae_loss as loss
+from model.modules import AvgPoseError
+from model.modules import LRDecay
 from logger.console_logger import ConsoleLogger
 from dataset_def import Dataset
 from dataset_def import Convert, ToTensor

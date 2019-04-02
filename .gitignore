@@ -3,12 +3,11 @@ __pycache__/
 .idea/
 saved/
 data/
-datasets/
 .vscode/*
 
 # files
 .*~
-!.vscode/settings.json
+#!.vscode/settings.json
 
 
 

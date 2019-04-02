@@ -8,7 +8,7 @@ Tester
 import numpy as np
 from tqdm import tqdm
 from base import BaseTester
-from model.modules.metric import AvgPosesError
+from model.modules import AvgPosesError
 import utils
 
 __all__ = [

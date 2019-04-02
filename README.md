@@ -2,7 +2,7 @@
 A simple template project using PyTorch which can be modified to fit many deep learning projects.
 
 ## Basic Usage
-The code in this repo is an MNIST example of the template, try run:
+This repo contains train and test code. E.g.
 ```
 python main.py
 ```
@@ -15,29 +15,6 @@ usage: train.py [-h] [-b BATCH_SIZE] [-e EPOCHS] [--resume RESUME]
 
 PyTorch Template
 
-optional arguments:
-  -h, --help    show this help message and exit
-  -b BATCH_SIZE, --batch-size BATCH_SIZE
-                        mini-batch size (default: 32)
-  -e EPOCHS, --epochs EPOCHS
-                        number of total epochs (default: 32)
-  --resume RESUME
-                        path to latest checkpoint (default: none)
-  --verbosity VERBOSITY
-                        verbosity, 0: quiet, 1: per epoch, 2: complete (default: 2)
-  --save-dir SAVE_DIR
-                        directory of saved model (default: model/saved)
-  --save-freq SAVE_FREQ
-                        training checkpoint frequency (default: 1)
-  --train_log_step TRAIN_LOG_STEP
-                        log frequency in number of iterations for training (default: 200)
-  --val_log_step VAL_LOG_STEP
-                        log frequency in number of iterations for validation (default: 2000)
-  --data-dir DATA_DIR
-                        directory of training/testing data (default: datasets)
-  --validation-split VALIDATION_SPLIT
-                        ratio of split validation data, [0.0, 1.0) (default: 0.0)
-  --no-cuda   use CPU in case there's no GPU support
 ```
 
 ## Structure

@@ -18,6 +18,8 @@ __all__ = [
 
 _CURR_DIR = dirname(abspath(__file__))
 
+# ------------------------------- Directories ----------------------------------
+
 DIRS = edict({
     'root': join(_CURR_DIR, '../'),
     'data': ensure_dir(join(_CURR_DIR, '../data/')),
@@ -25,7 +27,7 @@ DIRS = edict({
     'output': ensure_dir(join(_CURR_DIR, '../data/output/'))
 })
 
-# ------------------------------ Specific --------------------------------------
+# ------------------------------- Model specific ----------------------------------
 
 MODELS = edict({
     'ae': {
@@ -34,7 +36,7 @@ MODELS = edict({
     }
 })
 
-# ------------------------------ Generic ---------------------------------------
+# ------------------------------- Generic ----------------------------------
 
 # machine specific configurations
 _HOST_NAME = socket.gethostname()

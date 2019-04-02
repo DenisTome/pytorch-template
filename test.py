@@ -6,10 +6,10 @@ automatically assigned to the default value
 @author: Denis Tome'
 
 """
-from parser.test_parser import TestParser
+from parser import TestParser
 from torch.utils.data import DataLoader
 from logger.console_logger import ConsoleLogger
-from model.model import Model
+from model import Model
 from dataset_def import Dataset, ToTensor
 from tester.tester import Tester
 

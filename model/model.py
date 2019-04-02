@@ -23,7 +23,7 @@ class Model(BaseModel):
 
     def build_model(self):
         """Building model"""
-        
+
         self.cnn = nn.Sequential(
             nn.Conv2d(1, 8, kernel_size=3, padding=1),
             nn.ReLU(inplace=True),
