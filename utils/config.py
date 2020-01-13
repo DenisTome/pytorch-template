@@ -1,49 +1,42 @@
 # -*- coding: utf-8 -*-
 """
-Common constants used throughout the project
+Configurations used throughout the project
 
 @author: Denis Tome'
 
 """
-import socket
 from os.path import dirname, abspath, join
+import yaml
 from easydict import EasyDict as edict
 from utils.io import ensure_dir
 
+
 __all__ = [
-    'DIRS',
-    'MODELS',
-    'SETTINGS'
+    'config',
 ]
 
-_CURR_DIR = dirname(abspath(__file__))
 
-# ------------------------------- Directories ----------------------------------
+def load_config():
+    """Load configuration file
 
-DIRS = edict({
-    'root': join(_CURR_DIR, '../'),
-    'data': ensure_dir(join(_CURR_DIR, '../data/')),
-    'checkpoint': ensure_dir(join(_CURR_DIR, '../data/checkpoints/')),
-    'output': ensure_dir(join(_CURR_DIR, '../data/output/'))
-})
+    Returns:
+        dict -- dictionary with project configuration information
+    """
 
-# ------------------------------- Model specific ----------------------------------
+    curr_dir = dirname(abspath(__file__))
+    root_dir = join(curr_dir, '../')
 
-MODELS = edict({
-    'ae': {
-        'z_size': 20,
-        'h_l_size': 32
-    }
-})
+    # path with project configs
+    config_path = join(root_dir, 'data/config.yml')
 
-# ------------------------------- Generic ----------------------------------
+    with open(config_path) as fin:
+        config_data = edict(yaml.safe_load(fin))
 
-# machine specific configurations
-_HOST_NAME = socket.gethostname()
-_MPL_MODE = 'TkAgg'
-if socket.gethostname() == 'training':
-    _MPL_MODE = 'agg'
+    # fix paths wrt project root dir path
+    for key, val in config_data.dirs.items():
+        config_data.dirs[key] = ensure_dir(abspath(join(root_dir, val)))
 
-SETTINGS = edict({
-    'mpl_mode': _MPL_MODE
-})
+    return config_data
+
+
+config = load_config()
