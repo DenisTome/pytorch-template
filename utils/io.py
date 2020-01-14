@@ -24,7 +24,8 @@ __all__ = [
     'write_h5',
     'read_h5',
     'get_sub_dirs',
-    'get_files'
+    'get_files',
+    'make_relative'
 ]
 
 
@@ -318,3 +319,22 @@ def get_files(path, file_format):
         file_paths.extend([os.path.join(path, f) for f in files])
 
     return file_paths, file_names
+
+def make_relative(path, root_path):
+    """Make path relative with respect to a
+    root directory
+
+    Arguments:
+        path {str} -- current path
+        root_path {str} -- root directory path
+
+    Returns:
+        str -- relative path
+    """
+
+    r_path = path.replace(root_path, '')
+    if r_path[0] == '/':
+        r_path = r_path[1:]
+
+    return r_path
+
