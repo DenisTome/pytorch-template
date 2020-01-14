@@ -269,7 +269,7 @@ def get_sub_dirs(path):
             dirs = []
 
     dirs.sort()
-    dir_paths = [os.path.join(path, dir) for dir in dirs]
+    dir_paths = [os.path.abspath(os.path.join(path, dir)) for dir in dirs]
 
     return dirs, dir_paths
 
