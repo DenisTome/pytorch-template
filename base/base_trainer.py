@@ -56,6 +56,9 @@ class BaseTrainer(FrameworkClass):
         # check that we can run on GPU
         if not torch.cuda.is_available():
             self.with_cuda = False
+            
+        if self.with_cuda:
+            self.model.cuda()
 
         if self.with_cuda and (torch.cuda.device_count() > 1):
             if self.verbosity:
