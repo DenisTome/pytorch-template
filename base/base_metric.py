@@ -44,7 +44,7 @@ class BaseMetric(FrameworkClass):
 
         return res + self.eval(pred, gt)
 
-    def log(self, logger, iteration, pred, gt):
+    def log(self, logger, iteration, pred, gt, dataset=None):
         """Evaluate and add it to the log file
 
         Arguments:
@@ -52,25 +52,33 @@ class BaseMetric(FrameworkClass):
             iteration {int} -- iteration number
             pred {numpy array} -- prediction
             gt {numpy array} -- ground truth
+            dataset {str} -- dataset name
         """
 
         error = self.eval(pred, gt)
         self.log_res(logger,
                      iteration,
-                     error)
+                     error,
+                     dataset)
 
-    def log_res(self, logger, iteration, error):
+    def log_res(self, logger, iteration, error, dataset=None):
         """Add result to log file
 
         Arguments:
             logger {Logger} -- class responsible for logging into
             iteration {int} -- iteration number
             error {float} -- error value
+            dataset {str} -- dataset name
         """
 
-        logger.add_scalar('metrics/{0}'.format(self.name_format),
-                          error,
-                          iteration)
+        if dataset:
+            logger.add_scalar('metrics/{0}_{1}'.format(dataset, self.name_format),
+                              error,
+                              iteration)
+        else:
+            logger.add_scalar('metrics/{0}'.format(self.name_format),
+                              error,
+                              iteration)
 
     def _desc(self, **kwargs):
         """

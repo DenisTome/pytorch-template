@@ -21,14 +21,10 @@ class Tester(BaseTester):
     Tester class, inherited from BaseTester
     """
 
-    def __init__(self, model, data_loader,
-                 batch_size, save_dir, resume,
-                 verbosity, verbosity_iter,
-                 with_cuda, output_name):
-        super().__init__(model, None, data_loader,
-                         batch_size, save_dir, with_cuda,
-                         resume, verbosity,
-                         output_name, verbosity_iter)
+    def __init__(self, *args, **kwargs):
+        """Init"""
+        
+        super().__init__(*args, metrics=None, **kwargs)
         self.metric = AvgPosesError()
 
     def save_res(self, pred, gt, info):

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Created on Jun 08 15:16 2018
+IO Utils
 
 @author: Denis Tome'
 
@@ -8,6 +8,8 @@ Created on Jun 08 15:16 2018
 import re
 import os
 import json
+import pickle
+import pickletools
 import h5py
 import numpy as np
 
@@ -25,15 +27,18 @@ __all__ = [
     'read_h5',
     'get_sub_dirs',
     'get_files',
-    'make_relative'
+    'make_relative',
+    'serialize',
+    'unserialize'
 ]
 
 
-def get_checkpoint(resume_dir):
+def get_checkpoint(resume_path):
     """Get checkpoint
 
     Arguments:
-        resume_dir {str} -- path to the dir containing the checkpoint
+        resume_path {str} -- path to the dir containing the checkpoint or
+                             partially defined path ('*' only allowed at the end)
 
     Raises:
         IOError -- No checkpoint has been found
@@ -42,18 +47,34 @@ def get_checkpoint(resume_dir):
         str -- path to the checkpoint
     """
 
+    if not os.path.isdir(resume_path):
+
+        assert '.pth.tar' not in resume_path
+
+        # path needs to be completed
+        partial_name = resume_path.split('/')[-1]
+        path_dir = resume_path.replace(partial_name, '')
+
+        models_list = [f for f in os.listdir(path_dir) if partial_name in f]
+
+        if models_list:
+            return os.path.join(path_dir, models_list[-1])
+
+        # let's get a model in the same directory
+        resume_path = path_dir
+
     models_list = [
-        f for f in os.listdir(resume_dir) if f.endswith(".pth.tar")
+        f for f in os.listdir(resume_path) if f.endswith(".pth.tar")
     ]
     models_list.sort()
 
     if not models_list:
         raise IOError(
-            'Directory {} does not contain any model'.format(resume_dir))
+            'Directory {} does not contain any model'.format(resume_path))
 
     model_name = models_list[-2]
 
-    return os.path.join(resume_dir, model_name)
+    return os.path.join(resume_path, model_name)
 
 
 def ensure_dir(path):
@@ -173,12 +194,13 @@ def get_dir(path):
     """
 
     assert isinstance(path, str)
-    if '.' in path[-4:]:
-        name = path.split('/')[-1]
-        dir_name = path.replace('/{}'.format(name), '')
-        return dir_name
 
-    return path
+    try:
+        name = path.split('/')[-1]
+    except IndexError:
+        return path
+
+    return name
 
 
 def remove_files(paths):
@@ -257,8 +279,8 @@ def get_sub_dirs(path):
         path {str} -- path to directory
 
     Returns:
-        name, paths -- list of names and path of the
-                       sub-directories
+        str -- lists of absolute paths
+        str -- list of dir names
     """
 
     try:
@@ -275,7 +297,7 @@ def get_sub_dirs(path):
     return dirs, dir_paths
 
 
-def get_files(path, file_format):
+def get_files(path, file_format, keep_format=True):
     """Get file paths of files contained in
     a given directory according to the format
 
@@ -284,7 +306,8 @@ def get_files(path, file_format):
         file_format {list | str} -- list or single format
 
     Returns:
-        paths, names -- lists of paths and names
+        str -- lists of absolute paths
+        str -- list of file names
     """
 
     if isinstance(file_format, str):
@@ -314,11 +337,15 @@ def get_files(path, file_format):
             files = os.listdir(path)
         files.sort()
 
-        file_names.extend([f.replace('.{}'.format(f_format), '')
-                           for f in files])
+        if not keep_format:
+            file_names.extend([f.replace('.{}'.format(f_format), '')
+                               for f in files])
+        else:
+            file_names.extend(files)
         file_paths.extend([os.path.join(path, f) for f in files])
 
     return file_paths, file_names
+
 
 def make_relative(path, root_path):
     """Make path relative with respect to a
@@ -338,3 +365,30 @@ def make_relative(path, root_path):
 
     return r_path
 
+
+def serialize(data):
+    """Serialize data
+
+    Arguments:
+        data {object} -- object to serialize
+
+    Returns:
+        bytes -- serialized object
+    """
+
+    return pickletools.optimize(
+        pickle.dumps(data, pickle.HIGHEST_PROTOCOL)
+    )
+
+
+def unserialize(serialized_data):
+    """Serialized object to object
+
+    Arguments:
+        serialized_data {bytes} -- serialized object
+
+    Returns:
+        object -- unserialized object
+    """
+
+    return pickle.loads(serialized_data)

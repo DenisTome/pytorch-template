@@ -70,17 +70,3 @@ metrics = [my_metric, my_metric2]
 ```
 Now the logging shows two metrics.
 
-## Tools
-These are a set of functionality that can be used to improve the the execition times
-by pre-processing the data or for some specific tasks to be done few times.
-
-- **index_dataset**: this script generates an `index.h5` file containing a list
-of all the files contained in the dataset directory. By loading this file we can
-avoid to re-parse the entire set of files contained in the directory and speed up
-the data loader class creation.
-- **t_sne**: this script generates an `output.h5` file containing the data given
-as input projected into a lower dimensional space (2 or 3) to be able to plot it and
-visualize the distribution.
-- **numerate_frames**: this script adds number to frames and it's very usefull when
-we want to locate which is the corresponding frame we are visualizing in a video.
-

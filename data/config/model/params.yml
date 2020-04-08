@@ -1,0 +1,35 @@
+nn:
+  learning_rate: 0.1
+  batch_size: 32
+  epochs: 300
+  save_freq: 5000
+  cycle_consistency: 5000
+  cuda: True
+  resume: "init"
+  mode: "dataset_to_dataset"
+  val_limit: 1000
+  hyper_params:
+    aa_loss_weight: 1.0
+    ab_loss_weight: 10.0
+    aba_loss_weight: 1.0
+    rot_loss_weight: 5000.0
+    rot_loss_fk_weight: 0.5
+    rot_loss: "l2"
+    cycle_consistency_iter: 5000
+  architecture:
+    layers:
+      shared: [32]
+      h36m: [64, 32]
+      cmu: [64, 48]
+      cmu_rot: [64, 48]
+    encoding:
+      size: 20
+
+opt:
+  datasets: "h36m,cmu"
+  dataset: "cmu"
+  name: "h36m_cmu"
+  train_log_step: 200
+  val_log_step: 30000
+  img_log_step: 1000
+  num_workers: 35

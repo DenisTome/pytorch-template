@@ -18,7 +18,7 @@ class BaseModel(nn.Module):
     def __init__(self):
         super().__init__()
         self.model = None
-        
+
         self.name = self.__class__.__name__
         self._logger = ConsoleLogger(self.__class__.__name__)
 

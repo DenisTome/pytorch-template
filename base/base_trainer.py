@@ -8,86 +8,117 @@ Base trainer class
 import os
 import math
 import shutil
-import collections
-from torch.autograd import Variable
+import datetime
+from collections import OrderedDict
 import torch
 import numpy as np
+from base import BaseModelExecution
 from logger.model_logger import ModelLogger
 import utils.io as io
 from utils import is_model_parallel
-from base.template import FrameworkClass
 
 
-class BaseTrainer(FrameworkClass):
+class BaseTrainer(BaseModelExecution):
     """
     Base class for all trainers
     """
 
-    def __init__(self, model, loss, metrics, optimizer, epochs, training_name,
-                 save_dir, save_freq, with_cuda, resume, verbosity,
-                 train_log_step, verbosity_iter, reset=False, eval_epoch=False):
+    def __init__(self, model, loss, metrics, optimizer, train_loader, val_loader,
+                 batch_size, learning_rate, epochs, name, checkpoint_dir, save_freq,
+                 no_cuda, resume, img_log_step, train_log_step, desc, desc_str,
+                 reset, eval_epoch, val_log_step, **kwargs):
+        """Init"""
 
-        super().__init__()
+        super().__init__(model, no_cuda)
 
-        self.model = model
+        # ------------------- NN -------------------
         self.loss = loss
         self.metrics = metrics
+        self.min_loss = math.inf
+        self.reset = reset
+
+        # ------------------- Hyper-params -------------------
+        self.learning_rate = learning_rate
         self.optimizer = optimizer
         self.epochs = epochs
-        self.training_name = training_name
-        self.save_dir = save_dir
-        self.save_freq = save_freq
-        self.with_cuda = with_cuda
-        self.verbosity = verbosity
-        self.verbosity_iter = verbosity_iter
+        self.batch_size = batch_size
+
+        # ------------------------- Log ------------------------
+        self.global_step = 0
         self.train_log_step = train_log_step
-        self.min_loss = math.inf
+        self.img_log_step = img_log_step
+        self.val_log_step = val_log_step
+        self.eval_epoch = eval_epoch
+        self.model_version = model.version
+
+        # ---------------------- Generic -----------------------
+        self.training_name = name
         self.start_epoch = 0
         self.start_iteration = 0
-        self.model_logger = ModelLogger(
-            os.path.join(save_dir, self.training_name, 'log'),
-            self.training_name)
         self.training_info = None
-        self.eval_epoch = eval_epoch
-        self.reset = reset
-        self.single_gpu = True
-        self.global_step = 0
 
-        # check that we can run on GPU
-        if not torch.cuda.is_available():
-            self.with_cuda = False
-            
+        # --------------------- IO Related ---------------------
+        self.train_loader = train_loader
+        self.val_loader = val_loader
+        self.save_dir = checkpoint_dir
+        self.save_freq = save_freq
+        self.ckpt_desc, self.ckpt_dir = self._update_name_convention(
+            desc, desc_str)
+
+        self.model_logger = ModelLogger(
+            os.path.join(self.save_dir,
+                         self.training_name,
+                         self.ckpt_dir,
+                         'log'),
+            self.training_name)
+
+        io.ensure_dir(
+            os.path.join(self.save_dir,
+                         self.training_name,
+                         self.ckpt_dir))
+
+        # ------------------- Resources -------------------
         if self.with_cuda:
             self.model.cuda()
 
-        if self.with_cuda and (torch.cuda.device_count() > 1):
-            if self.verbosity:
-                self._logger.info("Let's use %d GPUs!",
-                                  torch.cuda.device_count())
-            self.single_gpu = False
+        if self.is_multi_gpu():
+            self._logger.info("Let's use %d GPUs!",
+                              torch.cuda.device_count())
             self.model = torch.nn.DataParallel(self.model)
 
-        io.ensure_dir(os.path.join(save_dir, self.training_name))
+        # ------------------- Resume -------------------
         if resume:
             self._resume_checkpoint(resume)
 
-    def _get_var(self, var):
-        """Generate variable based on CUDA availability
+    def _update_name_convention(self, desc: bool, desc_str: str):
+        """Update model descriptor according to name convention
 
         Arguments:
-            var {undefined} -- variable to be converted
+            desc {bool} -- add descriptor to name
+            desc_str {str} -- str to attach
 
         Returns:
-            tensor -- pytorch tensor
+            str -- descriptor
+            str -- checkpoint dir
         """
 
-        var = torch.FloatTensor(var)
-        var = Variable(var)
+        if desc_str:
+            desc = True
 
-        if self.with_cuda:
-            var = var.cuda()
+        if desc:
+            ckpt_desc = 'lr_{}_b_{}'.format(
+                self.learning_rate, self.batch_size)
 
-        return var
+            if desc_str:
+                ckpt_desc += '_{}'.format(desc_str)
+
+            checkpoint_folder = '{}_{}'.format(
+                self.model_version, ckpt_desc)
+        else:
+            ckpt_desc = ''
+            checkpoint_folder = self.model_version
+
+        return ckpt_desc, checkpoint_folder
 
     def train(self):
         """Train model"""
@@ -96,9 +127,8 @@ class BaseTrainer(FrameworkClass):
         if self.with_cuda:
             self.model.cuda()
         for epoch in range(self.start_epoch, self.epochs + 1):
-            if self.verbosity:
-                self._logger.info('Training epoch %d of %d',
-                                  epoch, self.epochs)
+            self._logger.info('Training epoch %d of %d',
+                              epoch, self.epochs)
             epoch_loss = self._train_epoch(epoch)
             if self.eval_epoch:
                 self._logger.info('Evaluating epoch %d of %d',
@@ -115,11 +145,39 @@ class BaseTrainer(FrameworkClass):
     def _dump_summary_info(self):
         """Save training summary"""
 
+        def _summary_info():
+            """Summary file describing the training
+            hyper-parameters and logs
+
+            Returns:
+                dict -- training log
+            """
+
+            info = {}
+            info['batch_size'] = self.batch_size
+            info['learning_rate'] = self.batch_size
+            info['creation'] = str(datetime.datetime.now())
+            info['size_dataset'] = len(self.train_loader) * self.batch_size
+            info['model_name'] = self.model.__class__.__name__
+            info['model_version'] = self.model_version
+
+            if self.val_loader:
+                info['size_valset'] = len(self.val_loader) * self.batch_size
+
+            return info
+
+        if self.ckpt_desc != '':
+            checkpoint_folder = '{}_{}'.format(
+                self.model_version, self.ckpt_desc)
+        else:
+            checkpoint_folder = self.model_version
+
         info_file_path = os.path.join(self.save_dir,
                                       self.training_name,
+                                      checkpoint_folder,
                                       'INFO.json')
         if not io.file_exists(info_file_path):
-            info = self._summary_info()
+            info = _summary_info()
             io.write_json(info_file_path,
                           info)
         else:
@@ -143,8 +201,15 @@ class BaseTrainer(FrameworkClass):
                 m = m.tolist()
             self.training_info['val_{}'.format(metric._desc)] = m
 
+        if self.ckpt_desc != '':
+            checkpoint_folder = '{}_{}'.format(
+                self.model_version, self.ckpt_desc)
+        else:
+            checkpoint_folder = self.model_version
+
         info_file_path = os.path.join(self.save_dir,
                                       self.training_name,
+                                      checkpoint_folder,
                                       'INFO.json')
         io.write_json(info_file_path,
                       self.training_info)
@@ -153,9 +218,6 @@ class BaseTrainer(FrameworkClass):
         raise NotImplementedError
 
     def _valid_epoch(self):
-        raise NotImplementedError
-
-    def _summary_info(self):
         raise NotImplementedError
 
     def _save_checkpoint(self, epoch, iteration, loss):
@@ -169,6 +231,7 @@ class BaseTrainer(FrameworkClass):
 
         if loss < self.min_loss:
             self.min_loss = loss
+
         arch = type(self.model).__name__
         state = {
             'epoch': epoch,
@@ -178,15 +241,23 @@ class BaseTrainer(FrameworkClass):
             'optimizer': self.optimizer.state_dict(),
             'min_loss': self.min_loss,
         }
+
+        if self.ckpt_desc != '':
+            checkpoint_folder = '{}_{}'.format(
+                self.model_version, self.ckpt_desc)
+        else:
+            checkpoint_folder = self.model_version
+
         filename = os.path.join(
-            self.save_dir, self.training_name,
-            'ckpt_eph{:02d}_iter{:06d}_loss_{:.5f}.pth.tar'.format(
+            self.save_dir, self.training_name, checkpoint_folder,
+            'ckpt_eph{:03d}_iter{:06d}_loss_{:.5f}.pth.tar'.format(
                 epoch, iteration, loss))
         self._logger.info("Saving checkpoint: {} ...".format(filename))
         torch.save(state, filename)
+
         if loss == self.min_loss:
             shutil.copyfile(filename,
-                            os.path.join(self.save_dir, self.training_name,
+                            os.path.join(self.save_dir, self.training_name, checkpoint_folder,
                                          'model_best.pth.tar'))
 
     def _resume_checkpoint(self, resume_path):
@@ -195,6 +266,9 @@ class BaseTrainer(FrameworkClass):
         Arguments:
             resume_path {str} -- path to the directory or model to be resumed
         """
+
+        if resume_path == 'init':
+            return
 
         if not os.path.isfile(resume_path):
             resume_path = io.get_checkpoint(resume_path)
@@ -205,12 +279,12 @@ class BaseTrainer(FrameworkClass):
 
         if is_model_parallel(checkpoint):
             if self.single_gpu:
-                trained_dict = collections.OrderedDict((k.replace('module.', ''), val)
-                                                       for k, val in checkpoint['state_dict'].items())
+                trained_dict = OrderedDict((k.replace('module.', ''), val)
+                                           for k, val in checkpoint['state_dict'].items())
         else:
             if not self.single_gpu:
-                trained_dict = collections.OrderedDict(('module.{}'.format(k), val)
-                                                       for k, val in checkpoint['state_dict'].items())
+                trained_dict = OrderedDict(('module.{}'.format(k), val)
+                                           for k, val in checkpoint['state_dict'].items())
 
         self.model.load_state_dict(trained_dict)
 

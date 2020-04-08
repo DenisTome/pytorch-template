@@ -10,7 +10,7 @@ from base import BaseMetric
 from utils import compute_3d_joint_error
 
 
-class AvgPoseError(BaseMetric):
+class PoseError(BaseMetric):
     """
     Average Euclidean distance between the gt
     and the predicted 3D poses.
@@ -28,14 +28,13 @@ class AvgPoseError(BaseMetric):
         """
 
         overall_err = 0.0
-        pid = 0
         for pose_in, pose_target in zip(pred, gt):
             error = compute_3d_joint_error(pose_in,
                                            pose_target)
             overall_err += np.mean(error, axis=0)
-            pid += 1
 
         return overall_err / pred.shape[0]
 
     def _desc(self):
         return 'MeanJointError'
+

@@ -76,4 +76,4 @@ class ConsoleLogger():
     def error(self, *args, **kwargs):
         """error"""
         self._logger.error(*args, **kwargs)
-        raise
+        exit()

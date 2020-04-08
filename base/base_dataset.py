@@ -6,36 +6,71 @@ depending on the different datasets.
 @author: Denis Tome'
 
 """
-import enum
+from enum import Enum, auto
 from torch.utils.data import Dataset
+import numpy as np
 from logger.console_logger import ConsoleLogger
-import utils
+from utils import config, abs_path, skeletons
 
 __all__ = [
-    'BaseDataset',
-    'SubSet'
+    'BaseDataset'
 ]
-
-
-class SubSet(enum.Enum):
-    """Type of subsets"""
-
-    train = 0
-    test = 1
-    val = 2
 
 
 class BaseDataset(Dataset):
     """Base dataset class"""
 
-    def __init__(self, path):
+    def __init__(self, path=None, sampling=None, desc=None):
+
         super().__init__()
 
         logger_name = self.__class__.__name__
-        self._logger = ConsoleLogger(logger_name)
+        if desc:
+            logger_name += '_{}'.format(desc)
 
-        self.path = utils.abs_path(path)
-        self.data_dir = utils.get_dir(path)
+        self._logger = ConsoleLogger(logger_name)
+        if path:
+            self.data_dir = abs_path(path)
+        if sampling:
+            self.sampling = sampling
+        else:
+            self.sampling = 1
+
+    def get_dataset_types(self, paths: list) -> list:
+        """Dataset types from lmdb paths
+
+        Arguments:
+            paths {list} -- list of lmdb paths
+
+        Returns:
+            list -- dataset names
+        """
+
+        d_types = []
+        for p in paths:
+            for d_type in config.dataset.supported:
+                if d_type in p:
+                    d_types.append(d_type)
+                    break
+
+        if len(d_types) != len(paths):
+            self._logger.error('Some of datasets are not recognized!')
+
+        return d_types
+
+    @staticmethod
+    def get_max_joints() -> int:
+        """Get max number of joints for all supported datasets
+
+        Returns:
+            int -- maximum number of joints
+        """
+
+        n_joints = []
+        for d_name in config.dataset.supported:
+            n_joints.append(skeletons[d_name].n_joints)
+
+        return np.array(n_joints).max()
 
     def __getitem__(self, index):
         raise NotImplementedError()

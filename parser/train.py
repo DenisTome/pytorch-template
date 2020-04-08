@@ -3,11 +3,14 @@
 General argument parser class
 pre-defining most of the commong arguments.
 
+These parameters are automatically set by the
+utils/config files and they can be then edited
+as arguments.
+
 @author: Denis Tome'
 
 """
 from base import BaseParser
-import utils
 
 
 class TrainParser(BaseParser):
@@ -18,17 +21,30 @@ class TrainParser(BaseParser):
 
         # add default values ususally used for training
         # and can be individually changed as arguments
-        self._add_learning_rate(0.0001)
-        self._add_batch_size(64)
-        self._add_epochs(100)
-        self._add_name('generic_training')
-        self._add_lr_decay()
-        self._add_resume(False, '-r', '--resume')
-        self._add_input()
-        self._add_validation(True)
-        self._add_output_dir(utils.DIRS.checkpoint)
-        self._add_model_checkpoints(1000)
-        self._add_verbose(50, 1000, 200, 20)
-        self._add_data_threads(8)
-        self._add_cuda()
-        self._add_reset()
+
+        # ------------------------------------------------------
+        # --------------------- NN Related ---------------------
+
+        # ------------------- Hyper-params -------------------
+        self.add_learning_rate()
+        self.add_batch_size()
+        self.add_epochs()
+
+        # ------------------- Generic -------------------
+        self.add_checkpoint_freq()
+        self.add_resume()
+        self.add_reset()
+        self.add_no_cuda()
+        self.add_desc()
+
+        # ------------------------------------------------------
+        # --------------------- IO Related ---------------------
+        self.add_dataset_input_type()
+        self.add_name()
+        self.add_train_dir()
+        self.add_val_dir()
+        self.add_datasets()
+        self.add_verbose()
+        self.add_standard_dirs()
+        self.add_data_threads()
+

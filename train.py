@@ -6,21 +6,108 @@ automatically assigned to the default value
 @author: Denis Tome'
 
 """
+import os
 from parser import TrainParser
-import torch.optim as optim
 from torch.utils.data import DataLoader
-from torchvision import transforms
+from torch.nn import MSELoss
 from model import Model
-from model.modules import ae_loss as loss
-from model.modules import AvgPoseError
-from model.modules import LRDecay
+from model.modules.optimizer import Optimizer
+from model.modules import PoseError
 from logger.console_logger import ConsoleLogger
-from dataset_def import Dataset
-from dataset_def import Convert, ToTensor
-from trainer.trainer import Trainer
+from dataset_def import Dataset, SetType
+from dataset_def import DatasetInputFormat, OutputData
+from dataset_def import transformations as trsf
+from trainer import Trainer
+from utils import config
 
 LOGGER = ConsoleLogger('Main')
 PARSER = TrainParser('Trainer')
+
+
+def get_input_type(input_type: str) -> DatasetInputFormat:
+    """Get dataset input type as DatasetInputFormat
+
+    Arguments:
+        input_type {str} -- string of input type
+
+    Raises:
+        RuntimeError: input type not found
+
+    Returns:
+        DatasetInputFormat -- input type
+    """
+
+    for t in DatasetInputFormat:
+        if t.value == input_type:
+            return t
+
+    raise RuntimeError(
+        'Dataset input type {} not supported'.format(input_type))
+
+
+def get_data_loaders(args):
+    """Create data loaders
+
+    Arguments:
+        args {dict} -- arguments
+
+    Returns:
+        DataLoader -- train data loader
+        DataLoader -- val data loader
+    """
+
+    d_names = args.datasets.split(',')
+    data_transform = {}
+    for d_name in d_names:
+        assert d_name in config.dataset.supported
+
+        data_trsf = trsf.Compose(
+            [trsf.Translation(d_name),
+             trsf.Rotation(d_name),
+             trsf.QuaternionToR(d_name),
+             trsf.Align(d_name)]
+        )
+
+        data_transform.update({d_name: data_trsf})
+
+    input_type = get_input_type(args.dataset_input_type)
+
+    # ------------------- Data selection -------------------
+    selection = OutputData.P3D | OutputData.DID | OutputData.ROT
+
+    # ------------------- Train-set -------------------
+    multi_datasets = []
+    for d_name in d_names:
+        multi_datasets.append(os.path.join(args.train_dir, d_name))
+
+    train_set = Dataset(multi_datasets,
+                        input_type=input_type,
+                        transf=data_transform,
+                        out_data=selection)
+    train_loader = DataLoader(train_set,
+                              batch_size=args.batch_size,
+                              shuffle=True,
+                              num_workers=args.num_workers)
+
+    # ------------------- Val-set -------------------
+
+    multi_datasets = []
+    for d_name in d_names:
+        val_path = os.path.join(args.val_dir, d_name)
+        if os.path.exists(val_path):
+            multi_datasets.append(val_path)
+
+    val_set = Dataset(multi_datasets,
+                      input_type=input_type,
+                      transf=data_transform,
+                      out_data=selection,
+                      set_type=SetType.VAL)
+    val_loader = DataLoader(val_set,
+                            batch_size=args.batch_size,
+                            shuffle=True,
+                            num_workers=args.num_workers)
+
+    return train_loader, val_loader
 
 
 def main(args):
@@ -33,68 +120,31 @@ def main(args):
     model.summary()
 
     # Specifying loss function, metric(s), and optimizer
-    metrics = [AvgPoseError()]
-    regularizers = None
-    reg_weights = 0
+    metrics = [PoseError()]
 
     if not args.no_cuda:
         model.cuda()
 
-    optimizer = optim.Adam(model.parameters(),
-                           lr=args.learning_rate)
+    # ------------------- Optimization -------------------
 
-    lr_decay = None
-    if not args.no_lr_decay:
-        lr_decay = LRDecay(optimizer,
-                           lr=args.learning_rate,
-                           decay_rate=args.lr_decay_rate,
-                           decay_steps=args.lr_decay_step)
+    optimizer = CycleOptimizer(model,
+                               lr=args.learning_rate)
 
-    data_transform = transforms.Compose([
-        Convert(),
-        ToTensor()
-    ])
+    # ------------------- Data loader -------------------
 
-    # Train-set
-    train_set = Dataset(args.input,
-                        transform=data_transform)
-    train_data_loader = DataLoader(train_set,
-                                   batch_size=args.batch_size,
-                                   shuffle=True,
-                                   num_workers=args.num_threads)
+    train_loader, val_loader = get_data_loaders(args)
 
-    # Val-set
-    val_set = Dataset(args.validation,
-                      transform=data_transform)
-    val_data_loader = DataLoader(val_set,
-                                 batch_size=args.batch_size,
-                                 shuffle=False,
-                                 num_workers=args.num_threads)
+    # ------------------- Trainer -------------------
 
     # Trainer instance
     trainer = Trainer(
-        model,
-        loss,
-        regularizers,
-        metrics,
-        data_loader=train_data_loader,
-        valid_data_loader=val_data_loader,
+        model=model,
+        loss=MSELoss(),
+        metrics=metrics,
         optimizer=optimizer,
-        reg_weights=reg_weights,
-        lr_decay=lr_decay,
-        epochs=args.epochs,
-        training_name=args.name,
-        save_dir=args.output,
-        save_freq=args.save_freq,
-        resume=args.resume,
-        verbosity=args.verbosity,
-        verbosity_iter=args.verbosity_iter,
-        train_log_step=args.train_log_step,
-        img_log_step=args.img_log_step,
-        val_log_step=args.val_log_step,
-        with_cuda=not args.no_cuda,
-        reset=args.reset,
-        eval_epoch=args.eval_epoch,
+        train_loader=train_loader,
+        val_loader=val_loader,
+        **vars(args)
     )
 
     # Start training!

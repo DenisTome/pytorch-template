@@ -1,0 +1,10 @@
+dirs:
+  train_dir: "/mnt/data/AnimationEncoder/Dataset/${dataset_type}/train/"
+  test_dir: "/mnt/data/AnimationEncoder/Dataset/${dataset_type}/test/"
+  val_dir: "/mnt/data/AnimationEncoder/Dataset/${dataset_type}/val/"
+
+datasets:
+  type: "s3"
+
+mpl:
+  mode: "agg"

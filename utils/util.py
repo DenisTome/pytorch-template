@@ -1,22 +1,25 @@
 # -*- coding: utf-8 -*-
 """
-Created on Jun 08 15:16 2018
+Utils
 
 @author: Denis Tome'
 
 """
 import re
-from copy import copy
+from itertools import permutations
 import numpy as np
+from utils import config, skeletons
 
 __all__ = [
     'check_different',
     'is_model_parallel',
-    'split_validation'
+    'substract_ranges',
+    'get_model_modes',
+    'is_model_cycle_mode'
 ]
 
 
-def check_different(list_a, list_b):
+def check_different(list_a: list, list_b: list) -> list:
     """Check differences in two lists
 
     Arguments:
@@ -48,7 +51,58 @@ def check_different(list_a, list_b):
     return diff
 
 
-def is_model_parallel(checkpoint):
+def substract_ranges(range_a: range, range_b: range, assume_unique=True) -> list:
+    """Subtract ranges
+
+    Arguments:
+        range_a {range} -- range a
+        range_b {range} -- range b
+
+    Keyword Arguments:
+        assume_unique {book} -- assumption (default: {True})
+
+    Returns:
+        list -- elements of a not in b
+    """
+
+    return np.setdiff1d(range_a, range_b, assume_unique).tolist()
+
+
+def get_model_modes() -> list:
+    """Compute model modes for pose prediction (input pose and output pose)
+
+    Returns:
+        list -- possible modes
+    """
+
+    # from whatever dataset to same dataset
+    modes = ['dataset_to_dataset']
+
+    # from one dataset to another one
+    pairs = list(permutations(config.dataset.supported))
+    for p in pairs:
+        modes.append('{}_to_{}'.format(*p))
+
+    for d_name in config.dataset.supported:
+
+        modes.append('{}_to_z'.format(d_name))
+        modes.append('z_to_{}'.format(d_name))
+
+        if skeletons[d_name].rot:
+            modes.append('z_to_{}-rot'.format(d_name))
+
+    # from specific dataset to same dataset
+    for d_name in config.dataset.supported:
+
+        modes.append('{0}_to_{0}'.format(d_name))
+
+        if skeletons[d_name].rot:
+            modes.append('{0}_to_{0}-rot'.format(d_name))
+
+    return modes
+
+
+def is_model_parallel(checkpoint: dict) -> bool:
     """Check if a model has been saved as parallel
 
     Arguments:
@@ -65,30 +119,21 @@ def is_model_parallel(checkpoint):
     return bool(parallel)
 
 
-def split_validation(data_loader, validation_split, randomized=True):
-    """Split dataset into train and validation set
+def is_model_cycle_mode(model_mode: str) -> bool:
+    """Check if model is in cycle mode
 
     Arguments:
-        data_loader {DataLoader} -- pytorch data loader
-        validation_split {float} -- percentage of validation set
-
-    Keyword Arguments:
-        randomized {bool} -- randomized splitting (default: {True})
+        model_mode {str} -- model mode
 
     Returns:
-        TrainLoader, ValidationLoader -- splitted data loaders
+        bool -- True if in cycle mode
     """
 
-    if validation_split == 0.0:
-        return data_loader, None
-    valid_data_loader = copy(data_loader)
-    if randomized:
-        rand_idx = np.random.permutation(len(data_loader.x))
-        data_loader.x = np.array([data_loader.x[i] for i in rand_idx])
-        data_loader.y = np.array([data_loader.y[i] for i in rand_idx])
-    split = int(len(data_loader.x) * validation_split)
-    valid_data_loader.x = data_loader.x[:split]
-    valid_data_loader.y = data_loader.y[:split]
-    data_loader.x = data_loader.x[split:]
-    data_loader.y = data_loader.y[split:]
-    return data_loader, valid_data_loader
+    matches = re.findall(r'_to_', model_mode)
+    if not matches:
+        return False
+
+    if len(matches) == 2:
+        return True
+
+    return False

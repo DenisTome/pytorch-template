@@ -6,54 +6,112 @@ Base tester class to be extended
 
 """
 import os
-import collections
+import re
 import torch
-from torch.autograd import Variable
 import numpy as np
+from base import BaseModelExecution
 import utils.io as io
-from utils import is_model_parallel
-from base.template import FrameworkClass
+from utils import get_model_modes, is_model_cycle_mode
 
 
-class BaseTester(FrameworkClass):
+class BaseTester(BaseModelExecution):
     """
     Base class for all dataset testers
     """
 
-    def __init__(self, model, metrics, data_loader,
-                 batch_size, save_dir, with_cuda,
-                 model_path, verbosity, output_name,
-                 verbosity_iter):
+    def __init__(self, model, metrics, test_loader, batch_size,
+                 output, desc, no_cuda, resume, name, dataset,
+                 model_mode='dataset_to_dataset', **kwargs):
+        """Init"""
 
-        super().__init__()
+        super().__init__(model, no_cuda)
 
-        self.model = model
-        self.test_data_loader = data_loader
-        self.batch_size = batch_size
+        # ------------------- NN -------------------
         self.metrics = metrics
-        self.output_name = output_name
-        self.save_dir = io.abs_path(save_dir)
-        self.with_cuda = with_cuda
-        self.verbosity = verbosity
-        self.verbosity_iter = verbosity_iter
         self.min_loss = np.inf
+        self.model_mode = model_mode
+
+        # ------------------- Hyper-params -------------------
+        self.batch_size = batch_size
+
+        # ------------------- Log -------------------
         self.exec_time = 0
-        self.single_gpu = True
+        self.dataset = dataset
 
-        # check that we can run on GPU
-        if not torch.cuda.is_available():
-            self.with_cuda = False
+        # ------------------- IO Related -------------------
+        self.test_loader = test_loader
+        self.output_name = name
+        self.save_dir = io.ensure_dir(io.abs_path(output))
+        self.model_resume_path = resume
+        io.ensure_dir(os.path.join(self.save_dir, self.output_name))
 
-        if self.with_cuda and (torch.cuda.device_count() > 1):
-            if self.verbosity:
-                self._logger.info('Let\'s use %d GPUs!',
-                                  torch.cuda.device_count())
+        # chech model mode
+        if not is_model_cycle_mode(self.model_mode):
+            possible_modes = get_model_modes()
+            if self.model_mode not in possible_modes:
+                self._logger.error('Model mode not supported!')
+
+        if desc:
+            learning_rate = self._get_learning_rate(resume)
+            self.desc = 'lr_{}_b_{}'.format(
+                learning_rate, self.batch_size
+            )
+            eph_num = self._get_epoch_number(resume)
+            if eph_num:
+                self.desc = '{}_ckpt_eph_{}'.format(self.desc, eph_num)
+        else:
+            self.desc = ''
+
+        # ------------------- Resources -------------------
+        if self.with_cuda:
+            self.model.cuda()
+
+        if self.is_multi_gpu():
+            self._logger.info('Let\'s use %d GPUs!',
+                              torch.cuda.device_count())
             self.model = torch.nn.DataParallel(self.model)
-            self.single_gpu = False
 
-        io.ensure_dir(os.path.join(save_dir, self.output_name))
-        if model_path:
-            self._resume_checkpoint(model_path)
+        # ------------------- Resume -------------------
+        self._resume_checkpoint(resume)
+
+    @staticmethod
+    def _get_learning_rate(path):
+        """Get learning rate from model path
+
+        Arguments:
+            path {str} -- model path
+
+        Returns:
+            str -- learning rate
+        """
+
+        lr = re.findall(r'_lr_(\d*\.\d+)',
+                        path)[0]
+        return lr
+
+    @staticmethod
+    def _get_epoch_number(path):
+        """Get checkpoint epoch number
+
+        Arguments:
+            path {str} -- model path
+
+        Returns:
+            str -- epoch number
+        """
+
+        ckpt = re.findall(r'ckpt_eph(\d*)', path)
+        if ckpt:
+            return ckpt[0]
+
+        return ''
+
+    @staticmethod
+    def _get_model_version(path) -> str:
+
+        version = re.findall(r'(v\d+\.\d+\.\d+(_lr_(\d*\.\d+)_b_(\d+)_e_(\d+))?)',
+                             path)[0][0]
+        return version
 
     def _update_exec_time(self, t):
         """Update execution time
@@ -74,7 +132,7 @@ class BaseTester(FrameworkClass):
         file_path = os.path.join(self.save_dir,
                                  self.output_name,
                                  'TEST.json')
-        num_elems = len(self.test_data_loader)
+        num_elems = len(self.test_loader)
 
         info = {
             'num_batches': num_elems,
@@ -86,57 +144,11 @@ class BaseTester(FrameworkClass):
 
         for mid in np.arange(len(self.metrics)):
             info[self.metrics[mid].__class__.__name__] = metrics[mid] / \
-                len(self.test_data_loader)
+                len(self.test_loader)
 
         # save json file
         io.write_json(file_path, info)
 
-    def _get_var(self, var):
-        """Generate variable based on CUDA availability
-
-        Arguments:
-            var {undefined} -- variable to be converted
-
-        Returns:
-            tensor -- pytorch tensor
-        """
-
-        var = torch.FloatTensor(var)
-        var = Variable(var)
-
-        if self.with_cuda:
-            var = var.cuda()
-
-        return var
-
     def test(self):
         """Run test on the test-set"""
         raise NotImplementedError()
-
-    def _resume_checkpoint(self, path):
-        """Resume model specified by the path
-
-        Arguments:
-            resume_path {str} -- path to directory containing the model
-                                 or the model itself
-        """
-
-        # load model
-        if not os.path.isfile(resume_path):
-            resume_path = io.get_checkpoint(path)
-
-        self._logger.info("Loading checkpoint: %s ...", resume_path)
-        checkpoint = torch.load(resume_path)
-        trained_dict = checkpoint['state_dict']
-
-        if is_model_parallel(checkpoint):
-            if self.single_gpu:
-                trained_dict = collections.OrderedDict((k.replace('module.', ''), val)
-                                                       for k, val in checkpoint['state_dict'].items())
-        else:
-            if not self.single_gpu:
-                trained_dict = collections.OrderedDict(('module.{}'.format(k), val)
-                                                       for k, val in checkpoint['state_dict'].items())
-
-        self.model.load_state_dict(trained_dict)
-        self._logger.info("Checkpoint '%s' loaded", resume_path)

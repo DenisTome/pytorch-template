@@ -1,0 +1,54 @@
+dirs:
+  data: "data"
+  checkpoint: "data/checkpoints"
+  output: "data/output"
+
+dataset:
+  supported: ["h36m", "cmu"]
+  n_components: 3
+  h36m:
+    name: "human3.6m"
+    alias: "h36m"
+    metric: "mm"
+    orientation: "z-up"
+    root_node: "root"
+  cmu:
+    name: "cmu"
+    alias: "cmu"
+    metric: "cm"
+    orientation: "y-down"
+    root_node: "hip"
+
+model:
+  batch_norm: False
+  pose:
+    metric: "mm"
+    orientation: "z-up"
+  encoder:
+    version: "v0.3.2"
+
+draw:
+  axes: False
+  grid: True
+  save_format: "png"
+  camera:
+    position: [0, 0, 0]
+    distance: 3.0
+    elevation: 10
+    azim: -90
+  metric: "m"
+  threshold:
+    confidence: 1e-6
+  size:
+    axis: 3.0
+    line: 3.0
+    marker: 4
+  colors:
+    joints: [0.0, 0.0, 0.0, 1.0]
+    pose:
+      prediction: [1.0, 0.0, 0.0, 1.0]
+      ground_truth: [0.0, 0.0, 1.0, 1.0]
+
+generic:
+  debug: False
+  lmdb_version: "v0.2.0"
