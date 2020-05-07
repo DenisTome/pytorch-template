@@ -34,6 +34,16 @@ class BaseParser(FrameworkClass):
             type=float,
             help='learning rate (default: {:.6f})'.format(val))
 
+    def add_weight_decay(self):
+        """Add weight decay argument"""
+
+        val = float(self.param.opt.weight_decay)
+        self.parser.add_argument(
+            '--weight-decay',
+            default=val,
+            type=float,
+            help='weight-decay value (default: {:.6f})'.format(val))
+
     def add_batch_size(self):
         """Add batch-size argument"""
 

@@ -42,7 +42,7 @@ class Trainer(BaseTrainer):
         self.model.train()
 
         total_loss = 0
-        pbar = tqdm(self.data_loader)
+        pbar = tqdm(self.train_loader)
         for bid, (data, target) in enumerate(pbar):
 
             # load data in GPU
@@ -87,7 +87,7 @@ class Trainer(BaseTrainer):
 
                 img_poses = self.drawer.poses_3d(y_output[0], y_target[0])
                 self.model_logger.train.add_image('3d_poses',
-                                                  img_poses,
+                                                  img_poses.transpose([2, 0, 1]),
                                                   self.global_step)
 
             # -------------------------------------------------------
@@ -105,39 +105,34 @@ class Trainer(BaseTrainer):
 
             if self.val_loader and (bid % self.val_log_step == 0) and (bid > 0):
                 self._logger.info('Evaluating performance of evaluation set')
-                val_loss, val_metrics = self._valid_epoch()
+                val_loss = self._valid_epoch()
 
                 self.model_logger.val.add_scalar('loss/iterations', val_loss,
                                                  self.global_step)
 
-                for i, metric in enumerate(self.metrics):
-                    metric.log_res(logger=self.model_logger.val,
-                                   iteration=self.global_step,
-                                   error=val_metrics[i])
                 self.model.train()
 
             self.global_step += 1
             total_loss += loss.item()
 
-        avg_loss = total_loss / len(self.data_loader)
+        avg_loss = total_loss / len(self.train_loader)
         self.model_logger.train.add_scalar('loss/epochs', avg_loss, epoch)
 
         return avg_loss
 
     def _valid_epoch(self):
-        """
-        Validate after training an epoch
+        """Validate model
 
-        :return: loss and metrics
+        Returns:
+            loss -- validation loss
         """
+
         self.model.eval()
         if self.with_cuda:
             self.model.cuda()
 
         total_val_loss = 0
-        total_val_metrics = [None] * len(self.metrics)
-        batch_idx = 0
-
+        
         pbar = tqdm(self.val_loader)
         pbar.set_description(' Validation')
         for (data, target) in pbar:
@@ -150,16 +145,6 @@ class Trainer(BaseTrainer):
             loss = self.loss(output, target)
             total_val_loss += loss.item()
 
-            y_output = data.data.cpu().numpy()
-            y_target = target.data.cpu().numpy()
-            for i, metric in enumerate(self.metrics):
-                total_val_loss[i] = metric.add_results(total_val_loss[i],
-                                                       y_output,
-                                                       y_target)
-
-            batch_idx += 1
-
-        avg_val_loss = total_val_loss / len(self.valid_data_loader)
-        for i, metric in enumerate(self.metrics):
-            total_val_metrics[i] /= len(self.valid_data_loader)
-        return avg_val_loss, total_val_metrics
+        avg_val_loss = total_val_loss / len(self.val_loader)
+        
+        return avg_val_loss

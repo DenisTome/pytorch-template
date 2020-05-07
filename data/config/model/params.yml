@@ -26,6 +26,7 @@ nn:
       size: 20
 
 opt:
+  weight_decay: 0.0001
   datasets: "h36m,cmu"
   dataset: "cmu"
   name: "h36m_cmu"

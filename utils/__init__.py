@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Init file
+Bvh classes
 
 @author: Denis Tome'
 
