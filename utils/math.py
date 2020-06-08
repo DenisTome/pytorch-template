@@ -225,10 +225,10 @@ def rad_to_deg(rad):
     """Radiants to degrees
 
     Arguments:
-        rad {float} -- radiants
+        rad {float / np.ndarray} -- radiants
 
     Returns:
-        float -- degrees
+        float / np.ndarray -- degrees
     """
 
     return (rad * 180.0) / numpy.pi
@@ -238,13 +238,21 @@ def deg_to_rad(deg):
     """Degrees to radiants
 
     Arguments:
-        deg {float} -- degree
+        deg {float / np.ndarray} -- degree
 
     Returns:
-        float -- radiants
+        float / np.ndarray-- radiants
     """
 
-    return (float(deg) * numpy.pi) / 180.0
+    if isinstance(deg, list):
+        deg = numpy.array(deg)
+
+    if isinstance(deg, numpy.ndarray):
+        deg = deg.astype(numpy.float32)
+    else:
+        deg = float(deg)
+
+    return (deg * numpy.pi) / 180.0
 
 
 def to_homogeneous(p3d):
@@ -1122,6 +1130,38 @@ def superimposition_matrix(v0, v1, scale=False, usesvd=True):
     v1 = numpy.array(v1, dtype=numpy.float64, copy=False)[:3]
     return affine_matrix_from_points(v0, v1, shear=False,
                                      scale=scale, usesvd=usesvd)
+
+
+def euler_matrix_from_axis(theta, axis):
+    """Return Euler matrix when specified axis is provided
+
+    Arguments:
+        theta {float} -- angle in radiant
+        axis {str} -- axis name
+
+    Raises:
+        RuntimeError: Axis name not recognized
+
+    Returns:
+        np.ndarray -- (4x4) rotation matrix
+    """
+
+    if axis == 'x':
+        ai = theta
+        aj = 0.0
+        ak = 0.0
+    elif axis == 'y':
+        ai = 0.0
+        aj = theta
+        ak = 0.0
+    elif axis == 'z':
+        ai = 0.0
+        aj = 0.0
+        ak = theta
+    else:
+        raise RuntimeError('Unexpected axis')
+
+    return euler_matrix(ai, aj, ak)
 
 
 def euler_matrix(ai, aj, ak, axes='sxyz'):

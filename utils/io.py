@@ -229,7 +229,7 @@ def write_h5(path, data):
     if '.h5' not in path[-3:]:
         path += '.h5'
 
-    hf = h5py.File(path, 'w')
+    hf = h5py.File(path, mode='w')
 
     if isinstance(data, dict):
         for k, v in data.items():
@@ -258,11 +258,8 @@ def read_h5(path):
         dict -- dictionary containing the data
     """
 
-    if not os.path.isfile(path):
-        raise FileNotFoundError()
-
     data_files = dict()
-    h5_data = h5py.File(path)
+    h5_data = h5py.File(path, mode='r')
     tags = list(h5_data.keys())
     for tag in tags:
         tag_data = np.asarray(h5_data[tag]).copy()
@@ -360,8 +357,9 @@ def make_relative(path, root_path):
     """
 
     r_path = path.replace(root_path, '')
-    if r_path[0] == '/':
-        r_path = r_path[1:]
+    if r_path:
+        if r_path[0] == '/':
+            r_path = r_path[1:]
 
     return r_path
 

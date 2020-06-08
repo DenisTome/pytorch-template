@@ -2,10 +2,6 @@
 """
 Transformations
 
-Each transformation needs to defined the scope
-to allow the transformation to be applied only to the
-correct piece of information.
-
 @author: Denis Tome'
 
 """
@@ -19,16 +15,14 @@ from utils import config
 __all__ = [
     'Compose',
     'Translation',
+    'Align',
     'Rotation',
     'QuaternionToR'
 ]
 
 
 class Compose(FrameworkClass):
-    """Compose transformations
-
-    This replaces the torch.utils.Compose class
-    """
+    """Compose transformations"""
 
     def __init__(self, transforms):
         """Init"""
@@ -44,6 +38,17 @@ class Compose(FrameworkClass):
                 'Comp transformation with single transformation...')
             self.transforms = [self.transforms]
             return
+
+        align_pos = -1
+        for tid, t in enumerate(self.transforms):
+            if isinstance(t, Align):
+                align_pos = tid
+
+        if align_pos < 0:
+            return
+
+        if align_pos != (len(self.transforms) - 1):
+            self._logger.error('Align transformation must be last!')
 
     def __call__(self, data, scope):
 
@@ -84,6 +89,19 @@ class Transformation(FrameworkClass):
 
         return self.SCOPE
 
+    @staticmethod
+    def to_tensor(data):
+        """Return tensor from np.ndarray
+        input format"""
+
+        if data is None:
+            return data
+
+        if isinstance(data, torch.Tensor):
+            return data
+
+        return torch.Tensor(data)
+
 
 class Translation(Transformation):
     """Transformation to class remove root
@@ -105,13 +123,98 @@ class Translation(Transformation):
 
     def __call__(self, data, scope):
 
-        sample = data[scope]
+        sample = self.to_tensor(data[scope])
         root_p3d = sample[self.root_id]
 
         # translate
         translated = sample - root_p3d
 
         data[self.SCOPE] = translated
+        return data
+
+
+class Align(Transformation):
+    """Transformation class to align pose with standard convention
+    making sure that orientation and scale are correct"""
+
+    SCOPE = OutputData.P3D
+
+    def __init__(self, d_name, cuda=False, batch_size=None):
+        """Init
+
+        Arguments:
+            d_name {str} -- dataset name
+
+        Keywork Arguments:
+            cuda {bool} -- cuda
+
+        """
+
+        super().__init__(d_name)
+
+        self.cuda = cuda
+        input_metric = config.dataset[d_name].metric
+        input_orientation = config.dataset[d_name].orientation
+
+        self.scale = conversion.match_metric(
+            input_metric,
+            config.model.pose.metric
+        )
+
+        # match desired dataset orientation
+        rot = conversion.match_orientation(
+            input_orientation,
+            config.model.pose.orientation
+        )
+
+        if batch_size is not None:
+            rot = rot.view(1, 4, 4).repeat(batch_size, 1, 1)
+
+        if cuda:
+            self.rot = rot.cuda()
+        else:
+            self.rot = rot
+
+    def _batch_call(self, sample):
+        """Appy trasnformatino to mini-batch"""
+
+        padd = torch.ones((sample.shape[0],
+                           sample.shape[1],
+                           1))
+
+        if self.cuda:
+            padd = padd.cuda()
+
+        # homogeneous coordinates
+        p4d = torch.cat([sample, padd], dim=2)
+
+        rotated = torch.bmm(
+            self.rot[:p4d.shape[0]],
+            p4d.permute(0, 2, 1)
+        ).permute(0, 2, 1)
+
+        # only xyz components
+        scaled = rotated[:, :, :3] * self.scale
+
+        return scaled
+
+    def __call__(self, data, scope=None):
+
+        if scope is None:
+            return self._batch_call(data)
+
+        sample = data[scope]
+        padd = torch.ones((sample.shape[0], 1))
+
+        # homogeneous coordinates
+        p4d = torch.cat([sample, padd], dim=1)
+
+        rotated = self.rot.mm(p4d.t()).t()
+
+        # only xyz components
+        scaled = rotated[:, :3] * self.scale
+
+        data[scope] = scaled
         return data
 
 
@@ -133,8 +236,8 @@ class Rotation(Transformation):
     def __call__(self, data, scope):
 
         # set root rotation to zero
-        rot = data[OutputData.ROT]
-        p3d = data[OutputData.P3D].double()
+        rot = self.to_tensor(data[OutputData.ROT])
+        p3d = self.to_tensor(data[OutputData.P3D]).double()
 
         # ------------------- target rotation -------------------
 

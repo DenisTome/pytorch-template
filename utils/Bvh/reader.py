@@ -23,6 +23,12 @@ class BvhReader:
     """Bvh Class"""
 
     def __init__(self, data):
+        """Init
+
+        Arguments:
+            data {File} -- file
+        """
+
         self.data = data
         self.root = BvhNode()
         self.frames = []
@@ -409,54 +415,47 @@ class BvhReader:
 
         Arguments:
             name {str} -- joint name
-            fid {int} -- frame number
+            # fid {int} -- frame number
 
         Returns:
             np.ndarray -- pose
         """
 
         # ------------------- Static transformations -------------------
+
+        # offset corresponds to the join translation wrt parent node
         offset = self.joint_offset(name)
-        t = np.eye(4)
-        t[:3, -1] = offset
+        stransmat = np.eye(4)
+        stransmat[:3, -1] = offset
 
         if self.is_joint_root(name):
-            static = t
+            local_to_world = stransmat
         else:
             parent_trsf = self.joint_parent(name).trsf
-            static = np.dot(parent_trsf, t)
+            local_to_world = np.dot(parent_trsf, stransmat)
 
         # ------------------- Dynamic transformations -------------------
         joint_channels = self.joint_channels(name)
 
-        channel_axis = []
-        channel_data = []
+        drotmat = np.eye(4)
         for c_name in joint_channels:
             if 'rotation' not in c_name:
                 continue
 
-            channel_axis.append(c_name[0].lower())
-            channel_data.append(
-                umath.deg_to_rad(
-                    self.frame_joint_channel(fid, name, c_name))
-            )
+            channel_axis = c_name[0].lower()
+            theta = umath.deg_to_rad(
+                self.frame_joint_channel(fid, name, c_name))
 
-        assert len(channel_axis) == 3
-        assert len(channel_data) == 3
-
-        r_type = 's{}{}{}'.format(*channel_axis)
-
-        dynamic = umath.euler_matrix(
-            channel_data[0],
-            channel_data[1],
-            channel_data[2],
-            r_type)
+            R = umath.euler_matrix_from_axis(theta, channel_axis)
+            drotmat = np.dot(drotmat, R)
 
         # ------------------- Joint transformation -------------------
         joint = self.get_joint(name)
-        trsf = np.dot(static, dynamic)
+        # last operation, to first operation
+        trsf = np.dot(local_to_world, drotmat)
+
         joint.trsf = trsf
-        joint.local_trsf = umath.quaternion_from_matrix(dynamic, axes='xyzw')
+        joint.local_trsf = umath.quaternion_from_matrix(drotmat, axes='xyzw')
 
         # call children transformations
         children = self.joint_direct_children_names(name)

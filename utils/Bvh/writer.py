@@ -23,7 +23,7 @@ from .reader import BvhReader
 class BvhWriter:
     """Bvh writer class"""
 
-    _PATH = 'config/dataset/skeleton.bvh'
+    _PATH = 'config/dataset/skeleton_few.bvh'
 
     def __init__(self, rotations_local=False, dataset_name_format='cmu',
                  frame_rate: float = None):
@@ -50,7 +50,6 @@ class BvhWriter:
             self.frame_rate = frame_rate
 
         self.rotations_local = rotations_local
-        # self.fk = SkeletonFK(False)
 
     def _load_bvh(self):
         """Load bvh file
@@ -120,7 +119,7 @@ class BvhWriter:
         j_channels = self.bvh.joint_channels(joint)
         rot_order = [n.replace('rotation', '').lower()
                      for n in j_channels if 'rotation' in n]
-        r_type = 's{}{}{}'.format(*(rot_order))
+        r_type = 'r{}{}{}'.format(*(rot_order))
 
         # ------------------- euler angles -------------------
 

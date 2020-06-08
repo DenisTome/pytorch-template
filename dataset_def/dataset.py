@@ -22,14 +22,6 @@ __all__ = [
 ]
 
 
-class DatasetInputFormat(Enum):
-    """Data types"""
-
-    LMDB = 'lmdb'
-    ORIGINAL = 'orig'
-    H5PY = 'h5'
-
-
 class OutputData(Flag):
     """Data to return by data loader"""
 

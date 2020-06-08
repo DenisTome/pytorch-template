@@ -15,4 +15,3 @@ from .base_parser import BaseParser
 from .base_tester import BaseTester
 from .base_trainer import BaseTrainer
 from .base_code_test import BaseCodeTest
-

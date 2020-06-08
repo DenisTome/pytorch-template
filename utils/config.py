@@ -12,7 +12,6 @@ import yaml
 from easydict import EasyDict as edict
 import numpy as np
 import matplotlib as mpl
-from base import FrameworkClass
 from logger import ConsoleLogger
 from utils.io import ensure_dir
 
@@ -23,6 +22,10 @@ __all__ = [
     'machine',
     'MachineType'
 ]
+
+_LOGGER = ConsoleLogger('Config')
+_CURR_DIR = dirname(abspath(__file__))
+_ROOT_DIR = join(_CURR_DIR, '../')
 
 
 class MachineType(Enum):
@@ -46,6 +49,7 @@ def load_config() -> dict:
         config_data = edict(yaml.safe_load(fin))
 
     # fix paths wrt project root dir path
+    config_data.dirs.root = _ROOT_DIR
     for key, val in config_data.dirs.items():
         config_data.dirs[key] = ensure_dir(abspath(join(_ROOT_DIR, val)))
 
@@ -132,6 +136,13 @@ def load_machine_config(configuration: dict) -> dict:
         else:
             mpl.use(mode)
 
+    def replace_placeholder(path: str, machine_config: dict) -> str:
+        """Filter path if there are placeholders"""
+        if '${dataset_type}' in path:
+            path = path.replace('${dataset_type}', machine_config.datasets.type)
+
+        return path
+
     machine_path = join(configuration.dirs.data,
                         'config/machine')
 
@@ -139,14 +150,29 @@ def load_machine_config(configuration: dict) -> dict:
 
     if 'ip-' in machine_name:
         # EC2 machine
-        raise RuntimeError('AWS not supported yet!')
+        machine_config_path = join(machine_path, 'aws.yml')
+        with open(machine_config_path) as fin:
+            machine_config_data = edict(yaml.safe_load(fin))
+
+        machine_config_data.update({'Type': MachineType.AWS})
     else:
         # Local machine
-        machine_config_path = join(machine_path, 'local.yml')
+        if configuration.generic.debug:
+            machine_config_path = join(machine_path, 'debug.yml')
+        else:
+            machine_config_path = join(machine_path, 'local.yml')
         with open(machine_config_path) as fin:
             machine_config_data = edict(yaml.safe_load(fin))
 
         machine_config_data.update({'Type': MachineType.LOCAL})
+
+    # check dir path and updated based on placeholders
+    machine_config_data.dirs.train_dir = replace_placeholder(
+        machine_config_data.dirs.train_dir, machine_config_data)
+    machine_config_data.dirs.test_dir = replace_placeholder(
+        machine_config_data.dirs.test_dir, machine_config_data)
+    machine_config_data.dirs.val_dir = replace_placeholder(
+        machine_config_data.dirs.val_dir, machine_config_data)
 
     custom_env(machine_config_data.mpl.mode)
     return machine_config_data
