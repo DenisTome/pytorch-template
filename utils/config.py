@@ -12,6 +12,7 @@ import yaml
 from easydict import EasyDict as edict
 import numpy as np
 import matplotlib as mpl
+from base import FrameworkClass
 from logger import ConsoleLogger
 from utils.io import ensure_dir
 
@@ -22,10 +23,6 @@ __all__ = [
     'machine',
     'MachineType'
 ]
-
-_LOGGER = ConsoleLogger('Config')
-_CURR_DIR = dirname(abspath(__file__))
-_ROOT_DIR = join(_CURR_DIR, '../')
 
 
 class MachineType(Enum):

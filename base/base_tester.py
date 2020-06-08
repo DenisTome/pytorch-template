@@ -11,7 +11,7 @@ import torch
 import numpy as np
 from base import BaseModelExecution
 import utils.io as io
-from utils import get_model_modes, is_model_cycle_mode
+from utils.util import get_model_modes, is_model_cycle_mode
 
 
 class BaseTester(BaseModelExecution):

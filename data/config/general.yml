@@ -6,6 +6,7 @@ dirs:
 dataset:
   supported: ["h36m", "cmu"]
   n_components: 3
+  lmdb_version: "v0.2.0"
   h36m:
     name: "human3.6m"
     alias: "h36m"
@@ -20,12 +21,7 @@ dataset:
     root_node: "hip"
 
 model:
-  batch_norm: False
-  pose:
-    metric: "mm"
-    orientation: "z-up"
-  encoder:
-    version: "v0.3.2"
+  version: "v0.3.2"
 
 draw:
   axes: False
@@ -49,6 +45,5 @@ draw:
       prediction: [1.0, 0.0, 0.0, 1.0]
       ground_truth: [0.0, 0.0, 1.0, 1.0]
 
-generic:
+status:
   debug: False
-  lmdb_version: "v0.2.0"

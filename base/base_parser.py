@@ -9,7 +9,7 @@ file and are overwritten from the arguments provided by the user.
 """
 import argparse
 from base.template import FrameworkClass
-from utils import config, model_config, machine
+from utils.config import config, model_config, machine
 
 
 class BaseParser(FrameworkClass):
@@ -33,16 +33,6 @@ class BaseParser(FrameworkClass):
             default=val,
             type=float,
             help='learning rate (default: {:.6f})'.format(val))
-
-    def add_weight_decay(self):
-        """Add weight decay argument"""
-
-        val = float(self.param.opt.weight_decay)
-        self.parser.add_argument(
-            '--weight-decay',
-            default=val,
-            type=float,
-            help='weight-decay value (default: {:.6f})'.format(val))
 
     def add_batch_size(self):
         """Add batch-size argument"""
@@ -74,18 +64,26 @@ class BaseParser(FrameworkClass):
             '--save-freq',
             default=val,
             type=int,
-            help='training checkpoint frequency in iterations(default: {:d})'.format(val))
+            help='training checkpoint frequency in iterations (default: {:d})'.format(val))
 
-    def add_resume(self):
+    def add_resume(self, force=False):
         """Add resume argument"""
 
         val = self.param.nn.resume
-        self.parser.add_argument(
-            '-r',
-            '--resume',
-            default=val,
-            type=str,
-            help='input directory/file path containing the model')
+        if not force or val != 'init':
+            self.parser.add_argument(
+                '-r',
+                '--resume',
+                default=val,
+                type=str,
+                help='input directory/file path containing the model (default: {})'.format(val))
+        else:
+            self.parser.add_argument(
+                '-r',
+                '--resume',
+                required=True,
+                type=str,
+                help='input directory/file path containing the model')
 
     def add_reset(self):
         """Add reset argument"""
@@ -156,18 +154,10 @@ class BaseParser(FrameworkClass):
             type=str,
             help='output name (default: {})'.format(val))
 
-    @staticmethod
-    def _replace_placeholder(path):
-        """Filter path if there are placeholders"""
-        if '${dataset_type}' in path:
-            path = path.replace('${dataset_type}', machine.datasets.type)
-
-        return path
-
     def add_train_dir(self):
         """Add train dir"""
 
-        val = self._replace_placeholder(machine.dirs.train_dir)
+        val = machine.dirs.train_dir
         self.parser.add_argument(
             '--train-dir',
             default=val,
@@ -177,7 +167,7 @@ class BaseParser(FrameworkClass):
     def add_test_dir(self):
         """Add train dir"""
 
-        val = self._replace_placeholder(machine.dirs.test_dir)
+        val = machine.dirs.test_dir
         self.parser.add_argument(
             '--test-dir',
             default=val,
@@ -187,7 +177,7 @@ class BaseParser(FrameworkClass):
     def add_val_dir(self):
         """Add train dir"""
 
-        val = self._replace_placeholder(machine.dirs.val_dir)
+        val = machine.dirs.val_dir
         self.parser.add_argument(
             '--val-dir',
             default=val,

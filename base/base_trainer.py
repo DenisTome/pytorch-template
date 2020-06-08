@@ -8,14 +8,15 @@ Base trainer class
 import os
 import math
 import shutil
-import datetime
 from collections import OrderedDict
 import torch
 import numpy as np
+from base import DatasetInputFormat
 from base import BaseModelExecution
 from logger.model_logger import ModelLogger
 import utils.io as io
-from utils import is_model_parallel
+from utils.config import model_config
+from utils.util import is_model_parallel
 
 
 class BaseTrainer(BaseModelExecution):
@@ -26,7 +27,7 @@ class BaseTrainer(BaseModelExecution):
     def __init__(self, model, loss, metrics, optimizer, train_loader, val_loader,
                  batch_size, learning_rate, epochs, name, checkpoint_dir, save_freq,
                  no_cuda, resume, img_log_step, train_log_step, desc, desc_str,
-                 reset, eval_epoch, val_log_step, **kwargs):
+                 reset, eval_epoch, val_log_step, dataset_input_type, **kwargs):
         """Init"""
 
         super().__init__(model, no_cuda)
@@ -50,6 +51,7 @@ class BaseTrainer(BaseModelExecution):
         self.val_log_step = val_log_step
         self.eval_epoch = eval_epoch
         self.model_version = model.version
+        self.is_aws = dataset_input_type == DatasetInputFormat.AWS.value
 
         # ---------------------- Generic -----------------------
         self.training_name = name
@@ -120,6 +122,24 @@ class BaseTrainer(BaseModelExecution):
 
         return ckpt_desc, checkpoint_folder
 
+    @staticmethod
+    def get_dataset_len(data_loader):
+        """Get dataset size
+
+        Arguments:
+            data_loader {DataLoader} -- dataset loader
+
+        Returns:
+            int -- dataset length
+        """
+
+        try:
+            size = len(data_loader)
+        except TypeError:
+            size = data_loader.batch_sampler.n_elems
+
+        return size
+
     def train(self):
         """Train model"""
 
@@ -153,18 +173,7 @@ class BaseTrainer(BaseModelExecution):
                 dict -- training log
             """
 
-            info = {}
-            info['batch_size'] = self.batch_size
-            info['learning_rate'] = self.batch_size
-            info['creation'] = str(datetime.datetime.now())
-            info['size_dataset'] = len(self.train_loader) * self.batch_size
-            info['model_name'] = self.model.__class__.__name__
-            info['model_version'] = self.model_version
-
-            if self.val_loader:
-                info['size_valset'] = len(self.val_loader) * self.batch_size
-
-            return info
+            return model_config
 
         if self.ckpt_desc != '':
             checkpoint_folder = '{}_{}'.format(
@@ -259,6 +268,8 @@ class BaseTrainer(BaseModelExecution):
             shutil.copyfile(filename,
                             os.path.join(self.save_dir, self.training_name, checkpoint_folder,
                                          'model_best.pth.tar'))
+
+        return filename
 
     def _resume_checkpoint(self, resume_path):
         """Resume model to be fine-tuned

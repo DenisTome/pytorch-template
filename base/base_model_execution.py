@@ -7,11 +7,22 @@ those classes that involve training/testing the model
 
 """
 import os
+from enum import Flag
 from collections import OrderedDict
 import torch
 from torch.autograd import Variable
 from base.template import FrameworkClass
-from utils import io, is_model_parallel
+import utils.math as umath
+import utils.io as io
+from utils.util import is_model_parallel
+
+
+class PredictionType(Flag):
+    """Data to return by data loader"""
+
+    P3D = 1 << 0
+    ROT = 1 << 1
+    ALL = umath.binary_full_n_bits(2)
 
 
 class BaseModelExecution(FrameworkClass):

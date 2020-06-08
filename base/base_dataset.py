@@ -10,11 +10,29 @@ from enum import Enum, auto
 from torch.utils.data import Dataset
 import numpy as np
 from logger.console_logger import ConsoleLogger
-from utils import config, abs_path, skeletons
+from utils.config import config, skeletons
+from utils.io import abs_path
 
 __all__ = [
-    'BaseDataset'
+    'BaseDataset',
+    'SubSet',
+    'DatasetInputFormat'
 ]
+
+
+class SubSet(Enum):
+    """Type of subsets"""
+    train = auto()
+    test = auto()
+    val = auto()
+
+
+class DatasetInputFormat(Enum):
+    """Data types"""
+    LMDB = 'lmdb'
+    ORIGINAL = 'orig'
+    H5PY = 'h5'
+    AWS = 's3'
 
 
 class BaseDataset(Dataset):
@@ -54,7 +72,7 @@ class BaseDataset(Dataset):
                     break
 
         if len(d_types) != len(paths):
-            self._logger.error('Some of datasets are not recognized!')
+            self._logger.error('Some of lmdb datasets not recognized!')
 
         return d_types
 
@@ -71,6 +89,20 @@ class BaseDataset(Dataset):
             n_joints.append(skeletons[d_name].n_joints)
 
         return np.array(n_joints).max()
+
+    @staticmethod
+    def get_max_limbs() -> int:
+        """Get max number of joints for all supported datasets
+
+        Returns:
+            int -- maximum number of joints
+        """
+
+        n_limbs = []
+        for d_name in config.dataset.supported:
+            n_limbs.append(skeletons[d_name].n_limbs)
+
+        return np.array(n_limbs).max()
 
     def __getitem__(self, index):
         raise NotImplementedError()
