@@ -142,7 +142,11 @@ class Dataset(BaseDataset):
         if d_name not in list(self.transf.keys()):
             return data
 
-        return self.transf[d_name](data, scope)
+        res = self.transf[d_name](data, scope)
+        if isinstance(res, dict):
+            return res[scope]
+
+        return res
 
     def __getitem__(self, index):
         """Get frame
