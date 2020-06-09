@@ -15,6 +15,10 @@ import matplotlib as mpl
 from logger import ConsoleLogger
 from utils.io import ensure_dir
 
+_LOGGER = ConsoleLogger('Config')
+_CURR_DIR = dirname(abspath(__file__))
+_ROOT_DIR = join(_CURR_DIR, '../')
+
 __all__ = [
     'config',
     'skeletons',
@@ -22,10 +26,6 @@ __all__ = [
     'machine',
     'MachineType'
 ]
-
-_LOGGER = ConsoleLogger('Config')
-_CURR_DIR = dirname(abspath(__file__))
-_ROOT_DIR = join(_CURR_DIR, '../')
 
 
 class MachineType(Enum):
@@ -43,13 +43,12 @@ def load_config() -> dict:
     """
 
     # path with project configs
-    config_path = join(_ROOT_DIR, 'data/config/config.yml')
+    config_path = join(_ROOT_DIR, 'data/config/general.yml')
 
     with open(config_path) as fin:
         config_data = edict(yaml.safe_load(fin))
 
     # fix paths wrt project root dir path
-    config_data.dirs.root = _ROOT_DIR
     for key, val in config_data.dirs.items():
         config_data.dirs[key] = ensure_dir(abspath(join(_ROOT_DIR, val)))
 
@@ -81,25 +80,19 @@ def laod_skelton_definitions(configuration: dict) -> dict:
     dataset_config_path = join(configuration.dirs.data,
                                'config/dataset')
 
-    # ------------------- human3.6m -------------------
-    skel_path = join(dataset_config_path,
-                     'h36m_skeleton.yml')
-    with open(skel_path) as fin:
-        skel_h36m = edict(yaml.safe_load(fin))
+    # load skeleton definitions automatically
+    # based on the supported datasets
+    supp_datasets = configuration.dataset.supported
+    skeleton = {}
 
-    # ------------------- cmu -------------------
-    skel_path = join(dataset_config_path,
-                     'cmu_skeleton.yml')
-    with open(skel_path) as fin:
-        skel_cmu = edict(yaml.safe_load(fin))
+    for supp_dataset in supp_datasets:
+        skel_path = join(dataset_config_path,
+                         '{}_skeleton.yml'.format(supp_dataset))
+        with open(skel_path) as fin:
+            skel = edict(yaml.safe_load(fin))
 
-    # ------------------- sanity checks -------------------
-    _check(skel_h36m, 'Human3.6M')
-    _check(skel_cmu, 'Cmu')
-
-    skeleton = edict({
-        'h36m': skel_h36m.definition,
-        'cmu': skel_cmu.definition})
+        _check(skel, supp_dataset)
+        skeleton[supp_dataset] = skel
 
     return skeleton
 
@@ -131,17 +124,10 @@ def load_machine_config(configuration: dict) -> dict:
         """Cutom configurations"""
 
         assert mode in ['agg', 'TkAgg']
-        if configuration.generic.debug:
+        if configuration.status.debug:
             mpl.use('TkAgg')
         else:
             mpl.use(mode)
-
-    def replace_placeholder(path: str, machine_config: dict) -> str:
-        """Filter path if there are placeholders"""
-        if '${dataset_type}' in path:
-            path = path.replace('${dataset_type}', machine_config.datasets.type)
-
-        return path
 
     machine_path = join(configuration.dirs.data,
                         'config/machine')
@@ -150,29 +136,14 @@ def load_machine_config(configuration: dict) -> dict:
 
     if 'ip-' in machine_name:
         # EC2 machine
-        machine_config_path = join(machine_path, 'aws.yml')
-        with open(machine_config_path) as fin:
-            machine_config_data = edict(yaml.safe_load(fin))
-
-        machine_config_data.update({'Type': MachineType.AWS})
+        raise RuntimeError('AWS not supported yet!')
     else:
         # Local machine
-        if configuration.generic.debug:
-            machine_config_path = join(machine_path, 'debug.yml')
-        else:
-            machine_config_path = join(machine_path, 'local.yml')
+        machine_config_path = join(machine_path, 'local.yml')
         with open(machine_config_path) as fin:
             machine_config_data = edict(yaml.safe_load(fin))
 
         machine_config_data.update({'Type': MachineType.LOCAL})
-
-    # check dir path and updated based on placeholders
-    machine_config_data.dirs.train_dir = replace_placeholder(
-        machine_config_data.dirs.train_dir, machine_config_data)
-    machine_config_data.dirs.test_dir = replace_placeholder(
-        machine_config_data.dirs.test_dir, machine_config_data)
-    machine_config_data.dirs.val_dir = replace_placeholder(
-        machine_config_data.dirs.val_dir, machine_config_data)
 
     custom_env(machine_config_data.mpl.mode)
     return machine_config_data

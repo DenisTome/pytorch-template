@@ -7,3 +7,4 @@ Init file
 """
 from .console_logger import ConsoleLogger
 from .model_logger import ModelLogger
+from .test_logger import TestLogger

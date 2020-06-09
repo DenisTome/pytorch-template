@@ -17,7 +17,8 @@ from utils import config, skeletons, conversion
 
 __all__ = [
     'GLPoseVisualizer',
-    'PLTPoseVisualizer'
+    'PLTPoseVisualizer',
+    'PLT2DVisualizer'
 ]
 
 
@@ -51,6 +52,19 @@ class PoseVisualizer():
             config.model.pose.metric,
             config.draw.metric
         )
+
+    @staticmethod
+    def _get_arg(name: str, **kwargs):
+        """Get argument from kwargs
+
+        Args:
+            name (str): argument name
+        """
+
+        if name not in list(kwargs.keys()):
+            return None
+
+        return kwargs[name]
 
     @staticmethod
     def _clip_to_max(image, max_value):
@@ -299,13 +313,6 @@ class PLTPoseVisualizer(PoseVisualizer):
                 self._logger.error('Unexpected format for axis raanges!')
 
             self.axis_range = axis_range
-
-    def _get_arg(self, name, **kwargs):
-
-        if name not in list(kwargs.keys()):
-            return None
-
-        return kwargs[name]
 
     def _scale_plot(self, pose, ax):
         """Scale plot according to data
@@ -556,3 +563,78 @@ class PLTPoseVisualizer(PoseVisualizer):
 
         plt.show()
         return image
+
+
+class PLT2DVisualizer(PoseVisualizer):
+    """Class specifing visualization parameters"""
+
+    def _check_pose(self, pose) -> None:
+        """Check pose format
+
+        Arguments:
+            pose {dict} -- pose
+        """
+
+        if not isinstance(pose, dict):
+            self._logger.error('Pose parameter needs to be a dictionary!')
+
+        if not pose['d_type'] in config.dataset.supported:
+            self._logger.error('Pose not supported!')
+
+        if pose['data'].shape[0] != skeletons[pose['d_type']].n_joints:
+            self._logger.error('Pose has wrong dimensionality!')
+
+    def plotImageJoints(self, image, p2d, save_image=False, **kwargs):
+        """Plot image with 2d joint positions
+
+        Arguments:
+            image {np.ndarray} -- image
+            p2d {np.ndarray} -- joint positions
+
+        Keyword Arguments:
+            save_image {bool} -- return image instead of plotting (default: {False})
+
+        Returns:
+            np.ndarray -- rgb information if save_image is True
+        """
+
+        c = self._get_arg('color', **kwargs)
+        if c is None:
+            c = (255, 255, 0)
+
+        r = self._get_arg('radius', **kwargs)
+        if r is None:
+            r = 2
+
+        if image.dtype == np.float32:
+            image *= 255.0
+            image = image.astype(np.uint8)
+
+        img = Image.fromarray(image)
+        draw = ImageDraw.Draw(img)
+
+        # draw joint positions
+        for j in p2d:
+            draw.ellipse((j[0]-r, j[1]-r, j[0]+r, j[1]+r), fill=c)
+
+        if save_image:
+            return np.asarray(img)
+
+        img.show()
+
+    def plotImage(self, image, **kwargs):
+        """Plot image
+
+        Arguments:
+            image {np.ndarray} -- image
+
+        Returns:
+            np.ndarray -- rgb information if save_image is True
+        """
+
+        if image.dtype == np.float32:
+            image *= 255.0
+            image = image.astype(np.uint8)
+
+        img = Image.fromarray(image)
+        img.show()
