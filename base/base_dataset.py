@@ -6,6 +6,15 @@ depending on the different datasets.
 @author: Denis Tome'
 
 """
+
+__author__ = "Denis Tome"
+__license__ = "Proprietary"
+__version__ = "0.1.0"
+__author__ = "Denis Tome"
+__email__ = "denis.tome@epicgames.com"
+__status__ = "Development"
+
+
 from enum import Enum, auto
 from torch.utils.data import Dataset
 import numpy as np

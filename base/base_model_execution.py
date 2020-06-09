@@ -6,6 +6,14 @@ those classes that involve training/testing the model
 @author: Denis Tome'
 
 """
+
+__author__ = "Denis Tome"
+__license__ = "Proprietary"
+__version__ = "0.1.0"
+__author__ = "Denis Tome"
+__email__ = "denis.tome@epicgames.com"
+__status__ = "Development"
+
 import os
 from enum import Flag
 from collections import OrderedDict
