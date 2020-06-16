@@ -9,7 +9,7 @@ import datetime
 from tqdm import tqdm
 from base import BaseTrainer
 from model.modules import LRDecay
-from utils.draw import Drawer, Style
+from utils.draw import PLTPoseVisualizer
 import utils
 
 __all__ = [
@@ -27,6 +27,7 @@ class Trainer(BaseTrainer):
 
         super().__init__(*args, **kwargs)
 
+        self.drawer = PLTPoseVisualizer()
         # add class specific stuff
 
     def _train_epoch(self, epoch):

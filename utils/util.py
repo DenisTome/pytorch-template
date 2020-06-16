@@ -15,7 +15,8 @@ __all__ = [
     'is_model_parallel',
     'substract_ranges',
     'get_model_modes',
-    'is_model_cycle_mode'
+    'is_model_cycle_mode',
+    'compute_3d_joint_error'
 ]
 
 
@@ -137,3 +138,42 @@ def is_model_cycle_mode(model_mode: str) -> bool:
         return True
 
     return False
+
+
+def compute_3d_joint_error(predicted, gt):
+    """Compute 3D pose error
+
+    Arguments:
+        predicted {numpy array} -- predicted pose
+        gt {numpy array} -- ground truth pose
+
+    Returns:
+        float -- error
+    """
+
+    if not isinstance(predicted, np.ndarray):
+        predicted = np.array(predicted)
+
+    if not isinstance(gt, np.ndarray):
+        gt = np.array(gt)
+
+    if predicted.ndim == 1:
+        predicted = np.reshape(predicted, [-1, 3])
+
+    if gt.ndim == 1:
+        gt = np.reshape(gt, [-1, 3])
+
+    # it includes the confidence as well
+    assert np.min(predicted.shape) == config.dataset.n_components
+    assert np.min(gt.shape) == config.dataset.n_components
+
+    if predicted.shape[1] != config.dataset.n_components:
+        predicted = np.transpose(predicted, [1, 0])
+
+    if gt.shape[1] != config.dataset.n_components:
+        gt = np.transpose(gt, [1, 0])
+
+    diff = predicted[:, :3] - gt[:, :3]
+    error = np.sqrt(diff[:, 0] ** 2 + diff[:, 1] ** 2 + diff[:, 2] ** 2)
+
+    return error

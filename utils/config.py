@@ -129,6 +129,14 @@ def load_machine_config(configuration: dict) -> dict:
         else:
             mpl.use(mode)
 
+    def replace_placeholder(path: str, machine_config: dict) -> str:
+        """Filter path if there are placeholders"""
+        
+        if '${dataset_type}' in path:
+            path = path.replace('${dataset_type}', machine_config.datasets.type)
+
+        return path
+
     machine_path = join(configuration.dirs.data,
                         'config/machine')
 

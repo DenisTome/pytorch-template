@@ -124,16 +124,15 @@ class Dataset(BaseDataset):
 
         return self.dataset_reader.d_names
 
-    def _apply_transformation_to_generic(self, data, d_name, scope):
-        """Run transformation on data
+    def _apply_transformations(self, data: dict, d_name: str):
+        """Apply transformation to data
 
-        Arguments:
-            data {tensor} -- data
-            d_name {str} -- dataset name
-            scope {OutputData} -- which type of data is given
+        Args:
+            data (dict): keys are the available data OutputData types
+            d_name (str): dataset name
 
         Returns:
-            tensor -- processed data
+            dict: transformed data
         """
 
         if not self.transf:
@@ -142,10 +141,7 @@ class Dataset(BaseDataset):
         if d_name not in list(self.transf.keys()):
             return data
 
-        res = self.transf[d_name](data, scope)
-        if isinstance(res, dict):
-            return res[scope]
-
+        res = self.transf[d_name](data, self.out_data)
         return res
 
     def __getitem__(self, index):
@@ -169,6 +165,10 @@ class Dataset(BaseDataset):
             OutputData.ROT: rot
         }
 
+        transformed = self._apply_transformations(
+            frame,
+            self.d_names[did])
+
         # ------------------------------------------------------
         # ------------------- data selection -------------------
         # ------------------------------------------------------
@@ -179,8 +179,7 @@ class Dataset(BaseDataset):
 
         if bool(self.out_data & OutputData.P3D):
 
-            trsf_p3d = self._apply_transformation_to_generic(
-                frame, self.d_names[did], OutputData.P3D)
+            trsf_p3d = transformed[OutputData.P3D]
 
             if trsf_p3d.shape[0] != self.max_joints:
                 p3d_padding = torch.zeros([self.max_joints, 3])
@@ -198,8 +197,7 @@ class Dataset(BaseDataset):
 
         if bool(self.out_data & OutputData.ROT):
 
-            trsf_rot = self._apply_transformation_to_generic(
-                frame, self.d_names[did], OutputData.ROT)
+            trsf_rot = transformed[OutputData.ROT]
 
             if trsf_rot.shape[0] != self.max_joints:
 

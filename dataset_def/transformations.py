@@ -54,9 +54,9 @@ class Compose(FrameworkClass):
 
         for t in self.transforms:
             if bool(t.get_scope() & scope):
-                data = t(data, scope)
+                data = t(data)
 
-        return data[scope]
+        return data
 
     def __repr__(self):
 
@@ -121,9 +121,9 @@ class Translation(Transformation):
         root_joint_name = config.dataset[self.d_name].root_node
         self.root_id = skeletons[self.d_name].joints[root_joint_name]
 
-    def __call__(self, data, scope):
+    def __call__(self, data):
 
-        sample = self.to_tensor(data[scope])
+        sample = self.to_tensor(data[self.SCOPE])
         root_p3d = sample[self.root_id]
 
         # translate
@@ -198,12 +198,12 @@ class Align(Transformation):
 
         return scaled
 
-    def __call__(self, data, scope=None):
+    def __call__(self, data):
 
-        if scope is None:
+        sample = data[self.SCOPE]
+        if sample.dim() > 2:
             return self._batch_call(data)
 
-        sample = data[scope]
         padd = torch.ones((sample.shape[0], 1))
 
         # homogeneous coordinates
@@ -214,7 +214,7 @@ class Align(Transformation):
         # only xyz components
         scaled = rotated[:, :3] * self.scale
 
-        data[scope] = scaled
+        data[self.SCOPE] = scaled
         return data
 
 
@@ -233,7 +233,7 @@ class Rotation(Transformation):
         # joint ids to use for rotation of the poses
         self.rot_norm = skeletons[d_name].normalization.rotation
 
-    def __call__(self, data, scope):
+    def __call__(self, data):
 
         # set root rotation to zero
         rot = self.to_tensor(data[OutputData.ROT])
@@ -241,7 +241,7 @@ class Rotation(Transformation):
 
         # ------------------- target rotation -------------------
 
-        if scope == OutputData.ROT:
+        if OutputData.ROT in data.keys():
 
             if rot is None:
                 rot = torch.zeros([p3d.shape[0], 4])
@@ -249,37 +249,36 @@ class Rotation(Transformation):
                 rot[0] = torch.tensor([0, 0, 0, 1])
 
             data[OutputData.ROT] = rot.float()
-            return data
 
         # ------------------- target position -------------------
 
-        # rotation is give; rotate back pose
-        if rot is not None:
+        if OutputData.P3D in data.keys():
 
-            root_rot = rot[0].data.numpy()
-            R = umath.quaternion_matrix(root_rot, axes='xyzw')
-            R = torch.tensor(R).t()
+            # rotation is give; rotate back pose
+            if rot is not None:
 
-            rotated = R[:3, :3].mm(p3d.t()).t()
-            data[OutputData.P3D] = rotated.float()
+                root_rot = rot[0].data.numpy()
+                R = umath.quaternion_matrix(root_rot, axes='xyzw')
+                R = torch.tensor(R).t()
 
-            return data
+                rotated = R[:3, :3].mm(p3d.t()).t()
+                data[OutputData.P3D] = rotated.float()
+            else:
+                # compute rotation and rotate back pose
+                pose_dir = p3d[self.rot_norm[0]] - p3d[self.rot_norm[1]]
 
-        # compute rotation and rotate back pose
-        pose_dir = p3d[self.rot_norm[0]] - p3d[self.rot_norm[1]]
+                theta = torch.atan2(pose_dir[1], pose_dir[0])
 
-        theta = torch.atan2(pose_dir[1], pose_dir[0])
+                rot = torch.tensor(
+                    [[torch.cos(theta), -torch.sin(theta), 0],
+                     [torch.sin(theta), torch.cos(theta), 0],
+                     [0, 0, 1]]
+                ).t()
 
-        rot = torch.tensor(
-            [[torch.cos(theta), -torch.sin(theta), 0],
-             [torch.sin(theta), torch.cos(theta), 0],
-             [0, 0, 1]]
-        ).t()
+                # R*p^t for new rotations in format 3 x J
+                rotated = rot.mm(p3d.t()).t()
 
-        # R*p^t for new rotations in format 3 x J
-        rotated = rot.mm(p3d.t()).t()
-
-        data[OutputData.P3D] = rotated.float()
+                data[OutputData.P3D] = rotated.float()
 
         return data
 
@@ -290,9 +289,9 @@ class QuaternionToR(Transformation):
 
     SCOPE = OutputData.ROT
 
-    def __call__(self, data, scope):
+    def __call__(self, data):
 
-        rot = data[scope].data.numpy()
+        rot = data[self.SCOPE].data.numpy()
 
         if rot is None:
             return data
@@ -302,6 +301,6 @@ class QuaternionToR(Transformation):
             R = umath.quaternion_matrix(q_j, axes='xyzw')[:3, :3]
             R_j[jid] = torch.Tensor(R)
 
-        data[OutputData.ROT] = R_j.float()
+        data[self.SCOPE] = R_j.float()
 
         return data
