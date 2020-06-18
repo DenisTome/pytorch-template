@@ -29,6 +29,7 @@ the dataset such that the loading time is drastically reduced.
 import os
 from base import BaseDataset
 from dataset_def.original import H36mParser, CMUParser
+from base.base_dataset import OutputData, DatasetInputFormat
 from utils import config
 
 __all__ = [
@@ -107,13 +108,10 @@ class OriginalReader(BaseDataset):
         """Get sample
 
         Arguments:
-            index {int} -- sample id
+            index (int): sample id
 
         Returns:
-            torch.tensor -- 3d joint positions
-            torch.tensor -- root joint rotation
-            torch.tensor -- root joint translation
-            torch.tensor -- dataset id
+            dict: dict with frame data
         """
 
         # get corresponding dataset id for given index
@@ -135,7 +133,12 @@ class OriginalReader(BaseDataset):
         p3d, rot, t = self.dataset_parsers[did].process(sample_path,
                                                         internal_idx)
 
-        return p3d, rot, t, did
+        frame = self.initialize_frame_output()
+        frame[OutputData.P3D] = p3d
+        frame[OutputData.ROT] = rot
+        frame[OutputData.T] = t
+
+        return frame
 
     def __len__(self):
         """Get number of elements in the dataset"""

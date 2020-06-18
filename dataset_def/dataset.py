@@ -11,33 +11,13 @@ from base import BaseDataset
 from dataset_def.lmdb import LmdbReader
 from dataset_def.h5 import H5Reader
 from dataset_def.original import OriginalReader
+from base.base_dataset import OutputData, DatasetInputFormat
 import utils.math as umath
 from utils import config
 
 __all__ = [
-    'DatasetInputFormat',
-    'OutputData',
-    'Dataset',
-    'SetType'
+    'Dataset'
 ]
-
-
-class OutputData(Flag):
-    """Data to return by data loader"""
-
-    P3D = 1 << 0
-    DID = 1 << 1
-    ROT = 1 << 2
-    TRS = 1 << 3
-    ALL = umath.binary_full_n_bits(4)
-
-
-class SetType(Enum):
-    """Data to return by data loader"""
-
-    TRAIN = 'train'
-    TEST = 'test'
-    VAL = 'val'
 
 
 class Dataset(BaseDataset):
@@ -159,12 +139,7 @@ class Dataset(BaseDataset):
 
         # base on what data we want
 
-        p3d, rot, trs, did = self.dataset_reader[index]
-        frame = {
-            OutputData.P3D: p3d,
-            OutputData.ROT: rot
-        }
-
+        frame = self.dataset_reader[index]
         transformed = self._apply_transformations(
             frame,
             self.d_names[did])
@@ -175,10 +150,20 @@ class Dataset(BaseDataset):
 
         out = []
 
-        # ------------------- p3d -------------------
+        # ------------------- img -------------------
+
+        if bool(self.out_data & OutputData.IMG):
+            if transformed[OutputData.IMG] is None:
+                self._logger.error('Image not available in data loader')
+            out.append(transformed[OutputData.IMG])
+
+
+         # ------------------- p3d -------------------
 
         if bool(self.out_data & OutputData.P3D):
 
+            if transformed[OutputData.P3D] is None:
+                self._logger.error('P3d not available in data loader')
             trsf_p3d = transformed[OutputData.P3D]
 
             if trsf_p3d.shape[0] != self.max_joints:
@@ -188,15 +173,28 @@ class Dataset(BaseDataset):
             else:
                 out.append(trsf_p3d.float())
 
-        # ------------------- dataset id -------------------
+        # ------------------- p2d -------------------
 
-        if bool(self.out_data & OutputData.DID):
-            out.append(did)
+        if bool(self.out_data & OutputData.P2D):
+
+            if transformed[OutputData.P2D] is None:
+                self._logger.error('P2d not available in data loader')
+            trsf_p2d = transformed[OutputData.P2D]
+
+            if trsf_p2d.shape[0] != self.max_joints:
+                p2d_padding = torch.zeros([self.max_joints, 2])
+                p2d_padding[:trsf_p2d.shape[0]] = trsf_p2d
+                out.append(p2d_padding.float())
+            else:
+                out.append(trsf_p2d.float())
 
         # ------------------- rotation -------------------
 
         if bool(self.out_data & OutputData.ROT):
 
+            if transformed[OutputData.ROT] is None:
+                self._logger.error(
+                    'ROT hat not available in data loader')
             trsf_rot = transformed[OutputData.ROT]
 
             if trsf_rot.shape[0] != self.max_joints:
@@ -217,7 +215,25 @@ class Dataset(BaseDataset):
 
         if bool(self.out_data & OutputData.TRS):
 
+            if transformed[OutputData.TRS] is None:
+                self._logger.error(
+                    'Root translation hat not available in data loader')
             out.append(trs.float())
+
+        # ------------------- dataset id -------------------
+
+        if bool(self.out_data & OutputData.DID):
+            if transformed[OutputData.DID] is None:
+                self._logger.error(
+                    'DatasetId hat not available in data loader')
+            out.append(frame[OutputData.DID])
+
+        # ------------------- meta-data -------------------
+
+        if bool(self.out_data & OutputData.META):
+            if transformed[OutputData.META] is None:
+                self._logger.error('Metadata hat not available in data loader')
+            out.append(frame[OutputData.META])
 
         if len(out) == 1:
             return out[0]

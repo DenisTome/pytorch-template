@@ -128,14 +128,11 @@ class LmdbReader(BaseDataset):
         """Pre-process pose
 
         Arguments:
-            data {dict} -- frame information
-            did {int} -- dataset id
+            data (dict): frame information
+            did (int): dataset id
 
         Returns:
-            torch.tensor -- 3d joint positions
-            torch.tensor -- 3d local joint rotations
-            torch.tensor -- 3d root joint translation
-            int -- dataset id
+            dict: dict with frame data
         """
 
         p3d = data.p3d[:skeletons.h36m.n_joints]
@@ -148,21 +145,24 @@ class LmdbReader(BaseDataset):
         else:
             root_t = torch.zeros([1, 3])
 
-        return p3d, rot, root_t, did
+        frame = self.initialize_frame_output()
+        frame[OutputData.P3D] = p3d
+        frame[OutputData.ROT] = rot
+        frame[OutputData.T] = root_t
+        frame[OutputData.DID] = did
+
+        return frame
 
     @staticmethod
     def _process_cmu(data, did):
         """Pre-process pose
 
         Arguments:
-            data {dict} -- frame information
-            did {int} -- dataset id
+            data (dict): frame information
+            did (int): dataset id
 
         Returns:
-            torch.tensor -- 3d joint positions
-            torch.tensor -- 3d local joint rotations
-            torch.tensor -- 3d root joint translation
-            int -- dataset id
+            dict: dict with frame data
         """
 
         if data.t is not None:
@@ -170,7 +170,13 @@ class LmdbReader(BaseDataset):
         else:
             root_t = torch.zeros([1, 3])
 
-        return data.p3d[:, :3], data.rot, root_t, did
+        frame = self.initialize_frame_output()
+        frame[OutputData.P3D] = data.p3d[:, :3]
+        frame[OutputData.ROT] = data.rot
+        frame[OutputData.T] = root_t
+        frame[OutputData.DID] = did
+
+        return frame
 
     def __getitem__(self, index):
         """Get frame
@@ -179,10 +185,7 @@ class LmdbReader(BaseDataset):
             index {int} -- frame number
 
         Returns:
-            torch.tensor -- 3d joint positions
-            torch.tensor -- 3d local joint rotations
-            torch.tensor -- 3d root joint translation
-            int -- dataset id
+            dict: dict with frame data
         """
 
         # choose dataset based on the mapping index

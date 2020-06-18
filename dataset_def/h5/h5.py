@@ -76,13 +76,10 @@ class H5Reader(BaseDataset):
         """Get frame
 
         Arguments:
-            index {int} -- frame number
+            index (int): frame number
 
         Returns:
-            torch.tensor -- 3d joint positions
-            torch.tensor -- root joint rotation
-            torch.tensor -- root joint translation
-            int -- dataset id
+            dict: dict with frame data
         """
 
         # choose dataset based on the mapping index
@@ -103,11 +100,12 @@ class H5Reader(BaseDataset):
 
         # ------------------- get data -------------------
 
-        p3d = torch.tensor(data['p3d'])
-        rot = torch.tensor(data['rot'])
-        trs = torch.tensor(data['trs'])
+        frame = self.initialize_frame_output()
+        frame[OutputData.P3D] = torch.tensor(data['p3d'])
+        frame[OutputData.ROT] = torch.tensor(data['rot'])
+        frame[OutputData.T] = torch.tensor(data['trs'])
 
-        return p3d, rot, trs, did
+        return frame
 
     def __len__(self):
         """Get number of elements in the dataset"""
