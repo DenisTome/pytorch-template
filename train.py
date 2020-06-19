@@ -6,8 +6,8 @@ automatically assigned to the default value
 @author: Denis Tome'
 
 """
-import os
 from parser import TrainParser
+import torch.optim as optim
 from torch.utils.data import DataLoader
 from torch.nn import MSELoss
 from model import Model
@@ -127,8 +127,8 @@ def main(args):
 
     # ------------------- Optimization -------------------
 
-    optimizer = CycleOptimizer(model,
-                               lr=args.learning_rate)
+    optimizer = optim.Adam(model.parameters(),
+                           lr=args.learning_rate)
 
     # ------------------- Data loader -------------------
 
