@@ -35,10 +35,10 @@ class H36mParser(BaseDatasetParser):
         structure.
 
         Arguments:
-            path {str} -- directory path
+            path (str): directory path
 
         Returns:
-            list -- indexed file paths
+            list: indexed file paths
         """
 
         # mocap data is in a leaf folder
@@ -70,7 +70,7 @@ class H36mParser(BaseDatasetParser):
         """Index dataset and load if it already exists
 
         Returns:
-            list -- indices [path, internal_idx]
+            list: indices [path, internal_idx]
         """
 
         index_file_path = os.path.join(self.path, 'index.h5')
@@ -92,12 +92,12 @@ class H36mParser(BaseDatasetParser):
         """Get root joint rotation and translation
 
         Arguments:
-            data {Bvh} -- data
-            fid {int} -- frame id
+            data (Bvh): data
+            fid (int): frame id
 
         Returns:
-            np.ndarray -- quaternions expressing joint rotations
-            np.ndarray -- root translation
+            np.ndarray: quaternions expressing joint rotations
+            np.ndarray: root translation
         """
 
         # Retrieve data here...
@@ -108,11 +108,11 @@ class H36mParser(BaseDatasetParser):
         """Process sample
 
         Arguments:
-            file_path {str} -- file path
-            s_id {int} -- sample id
+            file_path (str): file path
+            s_id (int): sample id
 
         Returns:
-            np.ndarray -- pose
+            np.ndarray: pose
         """
 
         # to avoid to load the same file multiple times

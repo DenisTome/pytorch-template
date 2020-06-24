@@ -5,14 +5,12 @@ Dataset proxy class
 @author: Denis Tome'
 
 """
-from enum import Enum, Flag
 import torch
-from base import BaseDataset
+from base.base_dataset import BaseDataset, SubSet
+from base.base_dataset import OutputData, DatasetInputFormat
 from dataset_def.lmdb import LmdbReader
 from dataset_def.h5 import H5Reader
 from dataset_def.original import OriginalReader
-from base.base_dataset import OutputData, DatasetInputFormat
-import utils.math as umath
 from utils import config
 
 __all__ = [
@@ -23,30 +21,28 @@ __all__ = [
 class Dataset(BaseDataset):
     """Dataset proxy class"""
 
-    def __init__(self, paths: list,
+    def __init__(self, path: str,
                  input_type: DatasetInputFormat = DatasetInputFormat.ORIGINAL,
                  transf: dict = None, sampling: int = 1, limit: int = -1,
                  out_data: bytes = OutputData.ALL,
-                 set_type=SetType.TRAIN):
+                 set_type=SubSet.TRAIN):
         """Init
 
-        Arguments:
-            paths {list} -- dataset paths
-
-        Keyword Arguments:
-            input_type {DatasetInputFormat} -- source data type
-                                               (default: {DatasetInputFormat.ORIGINAL})
-            transf {dict} -- data transformations per dataset, in the format
-                            {'d_type': transformation_function}
-            sampling {int} -- data sampling (default: {1})
-            limit {int} -- number of samples; if -1 no limit (default: {-1})
-            out_data {OutputDta} -- data to return by the class
-                                    (default: {OutputData.ALL})
-            train_set {SetType} -- is training set (Default {SetType.TRAIN})
+        Args:
+            path (str): dataset path
+            input_type (DatasetInputFormat, optional): source data type.
+                                                       Defaults to DatasetInputFormat.ORIGINAL.
+            transf (dict, optional): data transformation. Defaults to None.
+            sampling (int, optional): data sampling factor. Defaults to 1.
+            limit (int, optional): max number of samples to consider.
+                                   if -1 no limit. Defaults to -1.
+            out_data (OutputData, optional): data to return by tge class.
+                                             Defaults to OutputData.ALL.
+            set_type (SubSet, optional): set type. Defaults to SubSet.TRAIN.
         """
 
         desc = None
-        if set_type != SetType.TRAIN:
+        if set_type != SubSet.TRAIN:
             desc = set_type.value
 
         super().__init__()
@@ -54,19 +50,18 @@ class Dataset(BaseDataset):
         self.input_type = input_type
         self.out_data = out_data
         self.limit = limit
-
-        if not isinstance(paths, list):
-            paths = [paths]
-
         self.max_joints = self.get_max_joints()
+        self.max_2d_joints = config.model.openpose.n_joints
 
         # ------------------- data transformations -------------------
+
         self.transf = transf
         self._check_transormations()
 
         # ------------------- dataset reader based on type -------------------
+
         dataset_reader_class = self._get_dataset_reader()
-        self.dataset_reader = dataset_reader_class(paths, sampling, desc=desc)
+        self.dataset_reader = dataset_reader_class(path, sampling, desc=desc)
 
     def _check_transormations(self):
         """Check that transormations are in the right format"""
@@ -83,7 +78,7 @@ class Dataset(BaseDataset):
         """Get dataset reader based on mode
 
         Returns:
-            BaseDataset -- dataset reader
+            BaseDataset: dataset reader
         """
 
         if self.input_type == DatasetInputFormat.ORIGINAL:
@@ -104,12 +99,11 @@ class Dataset(BaseDataset):
 
         return self.dataset_reader.d_names
 
-    def _apply_transformations(self, data: dict, d_name: str):
+    def _apply_transformations(self, data: dict) -> dict:
         """Apply transformation to data
 
         Args:
             data (dict): keys are the available data OutputData types
-            d_name (str): dataset name
 
         Returns:
             dict: transformed data
@@ -118,21 +112,17 @@ class Dataset(BaseDataset):
         if not self.transf:
             return data
 
-        if d_name not in list(self.transf.keys()):
-            return data
-
-        res = self.transf[d_name](data, self.out_data)
-        return res
+        return self.transf(data, self.out_data)
 
     def __getitem__(self, index):
         """Get frame
 
         Arguments:
-            index {int} -- frame number
+            index (int): frame number
 
         Returns:
-            torch.tensor -- 3d joint positions
-            torch.tensor -- dataset id
+            torch.Tensor: 3d joint positions
+            torch.Tensor: dataset id
         """
 
         # ------------------- get data -------------------
@@ -140,9 +130,7 @@ class Dataset(BaseDataset):
         # base on what data we want
 
         frame = self.dataset_reader[index]
-        transformed = self._apply_transformations(
-            frame,
-            self.d_names[did])
+        transformed = self._apply_transformations(frame)
 
         # ------------------------------------------------------
         # ------------------- data selection -------------------
@@ -156,7 +144,6 @@ class Dataset(BaseDataset):
             if transformed[OutputData.IMG] is None:
                 self._logger.error('Image not available in data loader')
             out.append(transformed[OutputData.IMG])
-
 
          # ------------------- p3d -------------------
 
@@ -210,15 +197,6 @@ class Dataset(BaseDataset):
                 out.append(rot_padding.float())
             else:
                 out.append(trsf_rot.float())
-
-        # ------------------- root translation -------------------
-
-        if bool(self.out_data & OutputData.TRS):
-
-            if transformed[OutputData.TRS] is None:
-                self._logger.error(
-                    'Root translation hat not available in data loader')
-            out.append(trs.float())
 
         # ------------------- dataset id -------------------
 

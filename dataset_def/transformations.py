@@ -6,32 +6,41 @@ Transformations
 
 """
 import torch
+from torchvision import transforms
 from base import FrameworkClass
-from dataset_def import OutputData
+from base.base_dataset import OutputData
 import utils.math as umath
-from utils import skeletons, conversion
-from utils import config
+from utils.config import skeletons, conversion, config
 
 __all__ = [
     'Compose',
     'Translation',
     'Align',
     'Rotation',
-    'QuaternionToR'
+    'QuaternionToR',
+    'ImageNormalization'
 ]
 
 
 class Compose(FrameworkClass):
-    """Compose transformations"""
+    """Compose transformations
 
-    def __init__(self, transforms):
-        """Init"""
+    This replaces the torch.utils.Compose class
+    """
+
+    def __init__(self, list_trsf: list):
+        """List transformations
+
+        Args:
+            list_trsf (list): transformations
+        """
 
         super().__init__()
-        self.transforms = transforms
+        self.transforms = list_trsf
         self._check_transform()
 
     def _check_transform(self):
+        """Check transformation"""
 
         if not isinstance(self.transforms, list):
             self._logger.warning(
@@ -39,18 +48,17 @@ class Compose(FrameworkClass):
             self.transforms = [self.transforms]
             return
 
-        align_pos = -1
-        for tid, t in enumerate(self.transforms):
-            if isinstance(t, Align):
-                align_pos = tid
+    def __call__(self, data: dict, scope: OutputData):
+        """Run
 
-        if align_pos < 0:
-            return
+        Args:
+            data (dict): key are the type of data (based on scope)
+            scope (OutputData): data we are interest to process
+                                e.g. OutputData.IMG | OutputData.P3D
 
-        if align_pos != (len(self.transforms) - 1):
-            self._logger.error('Align transformation must be last!')
-
-    def __call__(self, data, scope):
+        Returns:
+            dict: transformed data
+        """
 
         for t in self.transforms:
             if bool(t.get_scope() & scope):
@@ -58,7 +66,7 @@ class Compose(FrameworkClass):
 
         return data
 
-    def __repr__(self):
+    def __repr__(self) -> str:
 
         format_string = self.__class__.__name__ + '('
 
@@ -302,5 +310,46 @@ class QuaternionToR(Transformation):
             R_j[jid] = torch.Tensor(R)
 
         data[self.SCOPE] = R_j.float()
+
+        return data
+
+
+class ImageNormalization(Transformation):
+    """Transformation class to normalize image both pixel wise
+    and also in terms of size"""
+
+    SCOPE = OutputData.IMG
+
+    def __init__(self, d_name: str, mean: float = 0.5, std: float = 0.5):
+        """Init
+
+        Args:
+            d_name (str): dataset name
+            mean (float, optional): pixel mean. Defaults to 0.5.
+            std (float, optional): pixel std. Defaults to 0.5.
+        """
+
+        super().__init__(d_name)
+
+        self.mean = mean
+        self.std = std
+
+        # additional transformations
+        self.to_pil = transforms.ToPILImage()
+        self.tensor_from_pil = transforms.ToTensor()
+
+    def __call__(self, data):
+
+        img = data[OutputData.IMG]
+        assert img.dtype == torch.float32
+
+        # ------------------- apply image transformations -------------------
+
+        img -= self.mean
+        img /= self.std
+
+        # ------------------- image normalization -------------------
+
+        data[OutputData.IMG] = img
 
         return data

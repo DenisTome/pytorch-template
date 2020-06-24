@@ -54,9 +54,10 @@ class OutputData(Flag):
     P3D = 1 << 1
     P2D = 1 << 2
     P2DHAT = 1 << 3
-    META = 1 << 4
-    DID = 1 << 5
-    ALL = umath.binary_full_n_bits(6)
+    ROT = 1 << 4
+    META = 1 << 5
+    DID = 1 << 6
+    ALL = umath.binary_full_n_bits(7)
 
 
 class BaseDataset(Dataset):
@@ -84,6 +85,20 @@ class BaseDataset(Dataset):
             self.sampling = sampling
         else:
             self.sampling = 1
+
+    @staticmethod
+    def initialize_frame_output() -> dict:
+        """Initialize frame output dictionary
+
+        Returns:
+            dict: frame dat
+        """
+
+        frame = dict()
+        for key in OutputData:
+            frame[key] = None
+
+        return frame
 
     def get_dataset_types(self, paths: list) -> list:
         """Dataset types by looking at paths
