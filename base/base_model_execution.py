@@ -9,34 +9,30 @@ those classes that involve training/testing the model
 
 __author__ = "Denis Tome"
 __license__ = "Proprietary"
-__version__ = "0.1.0"
+__version__ = "0.1.1"
 __author__ = "Denis Tome"
 __email__ = "denis.tome@epicgames.com"
 __status__ = "Development"
 
 import os
-from enum import Flag
 from collections import OrderedDict
 import torch
 from torch.autograd import Variable
 from base.template import FrameworkClass
-import utils.math as umath
 import utils.io as io
 from utils.util import is_model_parallel
-
-
-class PredictionType(Flag):
-    """Data to return by data loader"""
-
-    P3D = 1 << 0
-    ROT = 1 << 1
-    ALL = umath.binary_full_n_bits(2)
 
 
 class BaseModelExecution(FrameworkClass):
     """Base model execution class"""
 
-    def __init__(self, model, no_cuda):
+    def __init__(self, model, no_cuda: bool):
+        """Init
+
+        Args:
+            model (nn.Module): model
+            no_cuda (bool): with cuda
+        """
 
         super().__init__()
 
@@ -53,7 +49,7 @@ class BaseModelExecution(FrameworkClass):
         """Get number of GPUs
 
         Returns:
-            int -- number of GPUs
+            int: number of GPUs
         """
 
         return torch.cuda.device_count()
@@ -62,7 +58,7 @@ class BaseModelExecution(FrameworkClass):
         """Is multi-GPU available
 
         Returns:
-            bool -- True if multi-GPU available
+            bool: True if multi-GPU available
         """
 
         if self.with_cuda and (self.get_n_gpus() > 1):
@@ -74,10 +70,10 @@ class BaseModelExecution(FrameworkClass):
         """Generate variable based on CUDA availability
 
         Arguments:
-            var {undefined} -- variable to be converted
+            var (undefined): variable to be converted
 
         Returns:
-            tensor -- pytorch tensor
+            torch.Tensor: pytorch tensor
         """
 
         var = torch.FloatTensor(var)
@@ -92,7 +88,7 @@ class BaseModelExecution(FrameworkClass):
         """Set model mode
 
         Arguments:
-            model_mode {str/list} -- model mode
+            model_mode (str/list): model mode
         """
 
         if isinstance(model_mode, list):
@@ -103,12 +99,12 @@ class BaseModelExecution(FrameworkClass):
         else:
             self.model.module.set_model_mode(model_mode)
 
-    def _resume_checkpoint(self, resume_path):
+    def _resume_checkpoint(self, resume_path: str):
         """Resume model specified by the path
 
         Arguments:
-            resume_path {str} -- path to directory containing the model
-                                 or the model itself
+            resume_path (str): path to directory containing the model
+                               or the model itself
         """
 
         if resume_path == 'init':

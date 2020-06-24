@@ -10,7 +10,7 @@ base dataset classes
 
 __author__ = "Denis Tome"
 __license__ = "Proprietary"
-__version__ = "0.1.0"
+__version__ = "0.1.1"
 __author__ = "Denis Tome"
 __email__ = "denis.tome@epicgames.com"
 __status__ = "Development"
@@ -27,12 +27,10 @@ class BaseDatasetParser(FrameworkClass):
                  root_norm: bool = False):
         """Init
 
-        Arguments:
-            path {str} -- dataset path to be parser
-            sampling {int} -- sampling factor
-
-        Keywork Arguments:
-            root_norm {bool} -- remove root translation and rotation
+        Args:
+            path (str): dataset path to parse
+            sampling (int, optional): sampling factor. Defaults to 1.
+            root_norm (bool, optional): remove root rot and translation. Defaults to False.
         """
 
         super().__init__()
@@ -49,7 +47,7 @@ class BaseDatasetParser(FrameworkClass):
         """Index data
 
         Returns:
-            list -- indices
+            list: indices
         """
         raise NotImplementedError
 
@@ -57,7 +55,7 @@ class BaseDatasetParser(FrameworkClass):
         """Get element at given index
 
         Returns:
-            list -- [path, idx]
+            list: [data_path, idx, img_path]
         """
 
         if self.indices is None:
@@ -68,14 +66,15 @@ class BaseDatasetParser(FrameworkClass):
             return idx_val
 
         # convert encoded string and int with frame idx
-        return [idx_val[0].decode('utf8'), int(idx_val[1])]
+        return [idx_val[0].decode('utf8'), int(idx_val[1]), idx_val[2].decode('utf8')]
 
     @abstractmethod
-    def process(self, file_path: str, fid: int):
+    def process(self, file_path: str, fid: int, img_path: str):
         """Process single file
 
         Arguments:
-            file_path {str} -- file path
-            fid {int} -- frame id in the batch
+            file_path (str): file path
+            fid (int): frame id in the batch
+            img_path (str): image path
         """
         raise NotImplementedError

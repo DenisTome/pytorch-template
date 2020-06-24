@@ -9,18 +9,19 @@ depending on the different datasets.
 
 __author__ = "Denis Tome"
 __license__ = "Proprietary"
-__version__ = "0.1.0"
+__version__ = "0.1.1"
 __author__ = "Denis Tome"
 __email__ = "denis.tome@epicgames.com"
 __status__ = "Development"
 
 
-from enum import Enum, auto
+from enum import Enum, Flag
 from torch.utils.data import Dataset
 import numpy as np
 from logger.console_logger import ConsoleLogger
 from utils.config import config, skeletons
 from utils.io import abs_path
+import utils.math as umath
 
 __all__ = [
     'BaseDataset',
@@ -31,23 +32,44 @@ __all__ = [
 
 class SubSet(Enum):
     """Type of subsets"""
-    train = auto()
-    test = auto()
-    val = auto()
+
+    TRAIN = 'train'
+    TEST = 'test'
+    VAL = 'val'
 
 
 class DatasetInputFormat(Enum):
     """Data types"""
+
     LMDB = 'lmdb'
     ORIGINAL = 'orig'
     H5PY = 'h5'
     AWS = 's3'
 
 
+class OutputData(Flag):
+    """Data to return by data loader"""
+
+    IMG = 1 << 0
+    P3D = 1 << 1
+    P2D = 1 << 2
+    P2DHAT = 1 << 3
+    META = 1 << 4
+    DID = 1 << 5
+    ALL = umath.binary_full_n_bits(6)
+
+
 class BaseDataset(Dataset):
     """Base dataset class"""
 
-    def __init__(self, path=None, sampling=None, desc=None):
+    def __init__(self, path: str = None, sampling: int = None, desc: str = None):
+        """Initialize class
+
+        Args:
+            path (str, optional): data patj. Defaults to None.
+            sampling (int, optional): sampling factor. Defaults to None.
+            desc (str, optional): description. Defaults to None.
+        """
 
         super().__init__()
 
@@ -64,13 +86,13 @@ class BaseDataset(Dataset):
             self.sampling = 1
 
     def get_dataset_types(self, paths: list) -> list:
-        """Dataset types from lmdb paths
+        """Dataset types by looking at paths
 
         Arguments:
-            paths {list} -- list of lmdb paths
+            paths (list): list of lmdb paths
 
         Returns:
-            list -- dataset names
+            list: dataset names
         """
 
         d_types = []
@@ -81,7 +103,7 @@ class BaseDataset(Dataset):
                     break
 
         if len(d_types) != len(paths):
-            self._logger.error('Some of lmdb datasets not recognized!')
+            self._logger.error('Some datasets are not recognized!')
 
         return d_types
 
@@ -90,7 +112,7 @@ class BaseDataset(Dataset):
         """Get max number of joints for all supported datasets
 
         Returns:
-            int -- maximum number of joints
+            int: maximum number of joints
         """
 
         n_joints = []
@@ -104,7 +126,7 @@ class BaseDataset(Dataset):
         """Get max number of joints for all supported datasets
 
         Returns:
-            int -- maximum number of joints
+            int: maximum number of joints
         """
 
         n_limbs = []

@@ -8,7 +8,7 @@ Base tester class to be extended
 
 __author__ = "Denis Tome"
 __license__ = "Proprietary"
-__version__ = "0.1.0"
+__version__ = "0.1.1"
 __author__ = "Denis Tome"
 __email__ = "denis.tome@epicgames.com"
 __status__ = "Development"
@@ -83,14 +83,14 @@ class BaseTester(BaseModelExecution):
         self._resume_checkpoint(resume)
 
     @staticmethod
-    def _get_learning_rate(path):
+    def _get_learning_rate(path: str) -> str:
         """Get learning rate from model path
 
         Arguments:
-            path {str} -- model path
+            path (str): model path
 
         Returns:
-            str -- learning rate
+            str: learning rate
         """
 
         lr = re.findall(r'_lr_(\d*\.\d+)',
@@ -98,14 +98,14 @@ class BaseTester(BaseModelExecution):
         return lr
 
     @staticmethod
-    def _get_epoch_number(path):
+    def _get_epoch_number(path: str) -> str:
         """Get checkpoint epoch number
 
         Arguments:
-            path {str} -- model path
+            path (str): model path
 
         Returns:
-            str -- epoch number
+            str: epoch number
         """
 
         ckpt = re.findall(r'ckpt_eph(\d*)', path)
@@ -115,7 +115,15 @@ class BaseTester(BaseModelExecution):
         return ''
 
     @staticmethod
-    def _get_model_version(path) -> str:
+    def _get_model_version(path: str) -> str:
+        """Get model version
+
+        Args:
+            path (str): path
+
+        Returns:
+            str: version
+        """
 
         version = re.findall(r'(v\d+\.\d+\.\d+(_lr_(\d*\.\d+)_b_(\d+)_e_(\d+))?)',
                              path)[0][0]
@@ -125,7 +133,7 @@ class BaseTester(BaseModelExecution):
         """Update execution time
 
         Arguments:
-            t {long} -- execution time in ms
+            t (long): execution time in ms
         """
 
         self.exec_time += t / self.batch_size
@@ -134,7 +142,7 @@ class BaseTester(BaseModelExecution):
         """Save test information
 
         Arguments:
-            metrics {Metric} -- metrics used for evaluation
+            metrics (Metric): metrics used for evaluation
         """
 
         file_path = os.path.join(self.save_dir,
