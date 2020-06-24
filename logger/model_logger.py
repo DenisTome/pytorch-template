@@ -9,7 +9,7 @@ during the training phase, by storing errors, images, etc.
 import os
 import torch
 from torch.autograd import Variable
-from tensorboardX import SummaryWriter
+from torch.utils.tensorboard import SummaryWriter
 from utils.io import ensure_dir
 
 __all__ = [

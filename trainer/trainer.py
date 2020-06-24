@@ -65,7 +65,7 @@ class Trainer(BaseTrainer):
             # ------------------------ Train log ------------------------
             # -----------------------------------------------------------
 
-            if (bid % self.train_log_step) == 0:
+            if (self.global_step % self.train_log_step) == 0:
 
                 val = loss.item()
                 self.model_logger.train.add_scalar('loss/iterations', val,
@@ -82,7 +82,7 @@ class Trainer(BaseTrainer):
             # ------------------------------------------------------
             # ----------------------- Images -----------------------
 
-            if (bid % self.img_log_step) == 0 and self.img_log_step > -1:
+            if (self.global_step % self.img_log_step) == 0 and self.img_log_step > -1:
                 y_output = data.data.cpu().numpy()
                 y_target = target.data.cpu().numpy()
 
@@ -104,14 +104,15 @@ class Trainer(BaseTrainer):
             # --------------------- Validation ---------------------
             # ------------------------------------------------------
 
-            if self.val_loader and (bid % self.val_log_step == 0) and (bid > 0):
-                self._logger.info('Evaluating performance of evaluation set')
-                val_loss = self._valid_epoch()
+            if self.val_loaderL
+                if (self.global_step % self.val_log_step == 0) and (self.global_step > 0):
+                    self._logger.info('Evaluating performance of evaluation set')
+                    val_loss = self._valid_epoch()
 
-                self.model_logger.val.add_scalar('loss/iterations', val_loss,
-                                                 self.global_step)
+                    self.model_logger.val.add_scalar('loss/iterations', val_loss,
+                                                     self.global_step)
 
-                self.model.train()
+                    self.model.train()
 
             self.global_step += 1
             total_loss += loss.item()

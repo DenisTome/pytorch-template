@@ -8,7 +8,7 @@ Base trainer class
 
 __author__ = "Denis Tome"
 __license__ = "Proprietary"
-__version__ = "0.1.0"
+__version__ = "0.2.0"
 __author__ = "Denis Tome"
 __email__ = "denis.tome@epicgames.com"
 __status__ = "Development"
@@ -18,8 +18,7 @@ import math
 import shutil
 from collections import OrderedDict
 import torch
-import numpy as np
-from base import DatasetInputFormat
+from base.base_dataset import DatasetInputFormat
 from base import BaseModelExecution
 from logger.model_logger import ModelLogger
 import utils.io as io
@@ -35,7 +34,7 @@ class BaseTrainer(BaseModelExecution):
     def __init__(self, model, loss, metrics, optimizer, train_loader, val_loader,
                  batch_size, learning_rate, epochs, name, checkpoint_dir, save_freq,
                  no_cuda, resume, img_log_step, train_log_step, desc, desc_str,
-                 reset, eval_epoch, val_log_step, dataset_input_type, **kwargs):
+                 reset, eval_epoch, val_log_step, dataset_input_type=None, **kwargs):
         """Init"""
 
         super().__init__(model, no_cuda)
@@ -59,7 +58,10 @@ class BaseTrainer(BaseModelExecution):
         self.val_log_step = val_log_step
         self.eval_epoch = eval_epoch
         self.model_version = model.version
-        self.is_aws = dataset_input_type == DatasetInputFormat.AWS.value
+        if dataset_input_type is None:
+            self.is_aws = False
+        else:
+            self.is_aws = dataset_input_type == DatasetInputFormat.AWS.value
 
         # ---------------------- Generic -----------------------
         self.training_name = name
@@ -104,12 +106,12 @@ class BaseTrainer(BaseModelExecution):
         """Update model descriptor according to name convention
 
         Arguments:
-            desc {bool} -- add descriptor to name
-            desc_str {str} -- str to attach
+            desc (bool): add descriptor to name
+            desc_str (str): str to attach
 
         Returns:
-            str -- descriptor
-            str -- checkpoint dir
+            str: descriptor
+            str: checkpoint dir
         """
 
         if desc_str:
@@ -131,14 +133,14 @@ class BaseTrainer(BaseModelExecution):
         return ckpt_desc, checkpoint_folder
 
     @staticmethod
-    def get_dataset_len(data_loader):
+    def get_dataset_len(data_loader) -> int:
         """Get dataset size
 
         Arguments:
-            data_loader {DataLoader} -- dataset loader
+            data_loader (DataLoader): dataset loader
 
         Returns:
-            int -- dataset length
+            int: dataset length
         """
 
         try:
@@ -178,7 +180,7 @@ class BaseTrainer(BaseModelExecution):
             hyper-parameters and logs
 
             Returns:
-                dict -- training log
+                dict: training log
             """
 
             return model_config
@@ -201,49 +203,19 @@ class BaseTrainer(BaseModelExecution):
             info = io.read_from_json(info_file_path)
         self.training_info = info
 
-    def _update_summary(self, global_step, loss, metrics):
-        """Update training summary details
-
-        Arguments:
-            global_step {int} -- global step in the training process
-            loss {float} -- loss value
-            metrics {Metric} -- metrics used for evaluating the model
-        """
-
-        self.training_info['global_step'] = global_step
-        self.training_info['val_loss'] = loss
-        for idx, metric in enumerate(self.metrics):
-            m = metrics[idx]
-            if isinstance(m, np.ndarray):
-                m = m.tolist()
-            self.training_info['val_{}'.format(metric._desc)] = m
-
-        if self.ckpt_desc != '':
-            checkpoint_folder = '{}_{}'.format(
-                self.model_version, self.ckpt_desc)
-        else:
-            checkpoint_folder = self.model_version
-
-        info_file_path = os.path.join(self.save_dir,
-                                      self.training_name,
-                                      checkpoint_folder,
-                                      'INFO.json')
-        io.write_json(info_file_path,
-                      self.training_info)
-
     def _train_epoch(self, epoch):
         raise NotImplementedError
 
     def _valid_epoch(self):
         raise NotImplementedError
 
-    def _save_checkpoint(self, epoch, iteration, loss):
+    def _save_checkpoint(self, epoch: int, iteration: int, loss: float) -> str:
         """Save model
 
         Arguments:
-            epoch {int} -- epoch number
-            iteration {int} -- iteration number
-            loss {float} -- loss value
+            epoch (int): epoch number
+            iteration (int): iteration number
+            loss (float): loss value
         """
 
         if loss < self.min_loss:
@@ -279,11 +251,11 @@ class BaseTrainer(BaseModelExecution):
 
         return filename
 
-    def _resume_checkpoint(self, resume_path):
+    def _resume_checkpoint(self, resume_path: str) -> None:
         """Resume model to be fine-tuned
 
         Arguments:
-            resume_path {str} -- path to the directory or model to be resumed
+            resume_path (str): path to the directory or model to be resumed
         """
 
         if resume_path == 'init':
