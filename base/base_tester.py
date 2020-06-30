@@ -8,7 +8,7 @@ Base tester class to be extended
 
 __author__ = "Denis Tome"
 __license__ = "Proprietary"
-__version__ = "0.1.1"
+__version__ = "0.1.2"
 __author__ = "Denis Tome"
 __email__ = "denis.tome@epicgames.com"
 __status__ = "Development"
@@ -19,7 +19,6 @@ import torch
 import numpy as np
 from base import BaseModelExecution
 import utils.io as io
-from utils.util import get_model_modes, is_model_cycle_mode
 
 
 class BaseTester(BaseModelExecution):
@@ -29,7 +28,7 @@ class BaseTester(BaseModelExecution):
 
     def __init__(self, model, metrics, test_loader, batch_size,
                  output, desc, no_cuda, resume, name, dataset,
-                 model_mode='dataset_to_dataset', **kwargs):
+                 **kwargs):
         """Init"""
 
         super().__init__(model, no_cuda)
@@ -37,7 +36,6 @@ class BaseTester(BaseModelExecution):
         # ------------------- NN -------------------
         self.metrics = metrics
         self.min_loss = np.inf
-        self.model_mode = model_mode
 
         # ------------------- Hyper-params -------------------
         self.batch_size = batch_size
@@ -52,12 +50,6 @@ class BaseTester(BaseModelExecution):
         self.save_dir = io.ensure_dir(io.abs_path(output))
         self.model_resume_path = resume
         io.ensure_dir(os.path.join(self.save_dir, self.output_name))
-
-        # chech model mode
-        if not is_model_cycle_mode(self.model_mode):
-            possible_modes = get_model_modes()
-            if self.model_mode not in possible_modes:
-                self._logger.error('Model mode not supported!')
 
         if desc:
             learning_rate = self._get_learning_rate(resume)

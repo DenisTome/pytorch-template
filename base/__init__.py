@@ -6,7 +6,7 @@ Init file
 
 """
 from .template import FrameworkClass
-from .base_model_execution import BaseModelExecution, PredictionType
+from .base_model_execution import BaseModelExecution
 from .base_dataset import BaseDataset, SubSet, DatasetInputFormat
 from .base_dataset_parser import BaseDatasetParser
 from .base_metric import BaseMetric

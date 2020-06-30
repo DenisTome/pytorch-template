@@ -23,23 +23,17 @@ from base.template import FrameworkClass
 class BaseDatasetParser(FrameworkClass):
     """BaseDatasetParser"""
 
-    def __init__(self, path: str, sampling: int = 1,
-                 root_norm: bool = False):
+    def __init__(self, path: str, sampling: int = 1):
         """Init
 
         Args:
             path (str): dataset path to parse
             sampling (int, optional): sampling factor. Defaults to 1.
-            root_norm (bool, optional): remove root rot and translation. Defaults to False.
         """
 
         super().__init__()
         self.path = path
         self.sampling = sampling
-        self.root_norm = root_norm
-
-        self.cache_file = None
-        self.cache = None
         self.indices = None
 
     @abstractmethod

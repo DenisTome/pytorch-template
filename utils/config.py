@@ -52,6 +52,8 @@ def load_config() -> dict:
     for key, val in config_data.dirs.items():
         config_data.dirs[key] = ensure_dir(abspath(join(_ROOT_DIR, val)))
 
+    config_data.dirs.root = abspath(_ROOT_DIR)
+
     return config_data
 
 
@@ -131,9 +133,10 @@ def load_machine_config(configuration: dict) -> dict:
 
     def replace_placeholder(path: str, machine_config: dict) -> str:
         """Filter path if there are placeholders"""
-        
+
         if '${dataset_type}' in path:
-            path = path.replace('${dataset_type}', machine_config.datasets.type)
+            path = path.replace('${dataset_type}',
+                                machine_config.datasets.type)
 
         return path
 

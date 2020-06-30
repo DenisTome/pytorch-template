@@ -9,7 +9,7 @@ depending on the different datasets.
 
 __author__ = "Denis Tome"
 __license__ = "Proprietary"
-__version__ = "0.1.1"
+__version__ = "0.1.2"
 __author__ = "Denis Tome"
 __email__ = "denis.tome@epicgames.com"
 __status__ = "Development"
@@ -17,9 +17,8 @@ __status__ = "Development"
 
 from enum import Enum, Flag
 from torch.utils.data import Dataset
-import numpy as np
 from logger.console_logger import ConsoleLogger
-from utils.config import config, skeletons
+from utils.config import config
 from utils.io import abs_path
 import utils.math as umath
 
@@ -121,34 +120,6 @@ class BaseDataset(Dataset):
             self._logger.error('Some datasets are not recognized!')
 
         return d_types
-
-    @staticmethod
-    def get_max_joints() -> int:
-        """Get max number of joints for all supported datasets
-
-        Returns:
-            int: maximum number of joints
-        """
-
-        n_joints = []
-        for d_name in config.dataset.supported:
-            n_joints.append(skeletons[d_name].n_joints)
-
-        return np.array(n_joints).max()
-
-    @staticmethod
-    def get_max_limbs() -> int:
-        """Get max number of joints for all supported datasets
-
-        Returns:
-            int: maximum number of joints
-        """
-
-        n_limbs = []
-        for d_name in config.dataset.supported:
-            n_limbs.append(skeletons[d_name].n_limbs)
-
-        return np.array(n_limbs).max()
 
     def __getitem__(self, index):
         raise NotImplementedError()
