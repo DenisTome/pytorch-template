@@ -1,75 +1,139 @@
 # -*- coding: utf-8 -*-
 """
-Dataset loader class to load data of different datasets
-from their original files.
+Dataset loader class to load data the dataset from the original files.
 
-Currently supported one:
-- Human3.6M (http://vision.imar.ro/human3.6m/description.php)
-
-Each custom dataset parser returns a list of 2 elements:
-1. relative path (wrt to dataset root dir) of the file
-2. frame index
-where the frame index is important since in many datasets, multiple
-frames are stored in the same file.
-
-Relative paths are important in case we want to change the location
-of the dataset directory without compromizing the index.h5 file.
-This file contains the relative path of all the elements contrained in
-the dataset such that the loading time is drastically reduced.
+Here I show an example of the OriginalReader implemented for reading
+files from the Human3.6M dataset.
 
 @author: Denis Tome'
 
 """
 import os
-from base.base_dataset import BaseDataset, OutputData
-from dataset_def.original import H36mParser
+import numpy as np
+import scipy.io as sio
+from base import BaseDatasetReader, OutputData
+from utils import io
+
 
 __all__ = [
     'OriginalReader'
 ]
 
 
-class OriginalReader(BaseDataset):
-    """Original file multi-dataset reader"""
+class OriginalReader(BaseDatasetReader):
+    """Original-files dataset reader"""
 
-    def __init__(self, path: str, sampling: int = 1):
-        """Init
+    def __init__(self, *args, **kwargs):
+        """Init"""
 
-        Args:
-            path (str): dataset path
-            sampling (int, optional): sampling factor. Defaults to 1.
-        """
+        super().__init__(*args, **kwargs)
+        self.n_joints = None
 
-        super().__init__(sampling=sampling)
+        # ------------------- cache -------------------
 
-        # ------------------- generic -------------------
-        self.path = path
-        self.max_joints = self.get_max_joints()
+        self._cache_file_path = None
+        self._cache_file_content = None
 
-        # ------------------- indexing -------------------
-        self._logger.info('Initializing datasets from oringal files...')
-        self.dataset_parser, self.num_elems = self.index_datasets()
+    def _index_sub_dir(self, path) -> list:
+        """Index given directory
 
-    def index_datasets(self):
-        """Index dataset
+        This is specific to each dataset; each has a different
+        structure.
 
-        This is the function indexing the dataset / multiple datasets.
-        The code right now is set only for one dataset, but it can be
-        quicly extended for a multi-dataset configuration.
+        Arguments:
+            path (str): directory path
 
         Returns:
-            BaseDatasetParser: dataset parser
-            int: number of elements
+            list: indexed file paths ([file_path, internal_index])
         """
 
-        dataset_parser = H36mParser(self.path,
-                                    sampling=self.sampling,
-                                    root_norm=False)
+        # mocap data is in a leaf folder
+        _, dirs = io.get_sub_dirs(path)
+        if not dirs:
 
-        index = dataset_parser.index()
-        num_elems = len(index)
+            # relative path
+            r_path = io.make_relative(path, self.path)
 
-        return dataset_parser, num_elems
+            # h36m has one mat file for all images
+            data = '{}/h36m_meta.mat'.format(r_path).encode('utf8')
+            _, files = io.get_files(path, 'jpg')
+
+            list_data = []
+            for i in range(0, len(files), self.sampling):
+                list_data.append([data, i])
+            return list_data
+
+        # collect from sub-dirs
+        indexed = []
+
+        for d in dirs:
+            data = self._index_sub_dir(d)
+            indexed.extend(data)
+
+        return indexed
+
+    def _index_dataset(self) -> list:
+        """Index dataset files for faster data loading
+
+        Returns:
+            list: list of indices ([file_path, internal_index])
+        """
+
+        index_file_path = os.path.join(self._path, 'index.npy')
+        if io.file_exists(index_file_path):
+            self._logger.info(
+                'Loading index file {}...'.format(index_file_path))
+            indices = np.load(index_file_path, allow_pickle=True)
+            return indices
+
+        self._logger.info('Indexing Human3.6M dataset files...')
+        indices = self._index_sub_dir(self._path)
+
+        self._logger.info('Saving indexed dataset...')
+        np.save(index_file_path, indices, allow_pickle=True)
+
+        return indices
+
+    def _get_processed_sample(self, file_path: str, sample_id: int):
+        """Process sample
+
+        Arguments:
+            file_path (str): file path
+            sample_id (int): sample id
+
+        Returns:
+            np.ndarray: pose
+        """
+
+        # Human3.6M stores multiple frames per file
+        # if the correct file is already open, avoid loading it again
+        if self._cache_file_path is None:
+            self._cache_file_path = file_path
+            self._cache_file_content = sio.loadmat(
+                os.path.join(self.path, file_path))
+        else:
+            if self._cache_file_path != file_path:
+                self._cache_file_path = file_path
+                self._cache_file_content = sio.loadmat(
+                    os.path.join(self.path, file_path))
+
+        sample = np.array(self._cache_file_content['pose3d_world'][sample_id])
+
+        return sample
+
+    @staticmethod
+    def _initialize_frame_output() -> dict:
+        """Initialize frame output dictionary
+
+        Returns:
+            dict: dictionary where keys as expected outputs
+        """
+
+        frame = dict()
+        for key in OutputData:
+            frame[key] = None
+
+        return frame
 
     def __getitem__(self, index: int) -> dict:
         """Get sample
@@ -81,26 +145,19 @@ class OriginalReader(BaseDataset):
             dict: dict with frame data
         """
 
-        # get corresponding dataset id for given index
-        rel_path, internal_idx = self.dataset_parser.get_element(index)
+        rel_path, internal_idx = self._indices[index]
 
         # make absolute path
-        sample_path = os.path.join(self.path, rel_path)
+        path_sample = os.path.join(self.path, str(rel_path))
 
-        # points, root rotation and translation
-        p3d, rot, _ = self.dataset_parser.process(sample_path,
-                                                  internal_idx)
+        frame = self._initialize_frame_output()
+        p3d = self._get_processed_sample(path_sample, internal_idx)
 
-        # initialize dictionary with all returnable data
-        # and only provide the information retrievable by
-        # this class
-        frame = self.initialize_frame_output()
+        # -------------------------------------------------------- #
+        # similarly, gather all the information that the dataset
+        # can return, and assigne it according to the name
+        # -------------------------------------------------------- #
+
         frame[OutputData.P3D] = p3d
-        frame[OutputData.ROT] = rot
 
         return frame
-
-    def __len__(self):
-        """Get number of elements in the dataset"""
-
-        return self.num_elems

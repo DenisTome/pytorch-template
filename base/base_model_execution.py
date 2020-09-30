@@ -7,12 +7,7 @@ those classes that involve training/testing the model
 
 """
 
-__author__ = "Denis Tome"
-__license__ = "Proprietary"
-__version__ = "0.1.1"
-__author__ = "Denis Tome"
-__email__ = "denis.tome@epicgames.com"
-__status__ = "Development"
+__version__ = "0.1.2"
 
 import os
 from collections import OrderedDict
@@ -66,14 +61,14 @@ class BaseModelExecution(FrameworkClass):
 
         return False
 
-    def _get_var(self, var):
+    def _get_var(self, var: torch.Tensor) -> torch.autograd.Variable:
         """Generate variable based on CUDA availability
 
         Arguments:
-            var (undefined): variable to be converted
+            var (torch.Tensor): tensor to be turned into a variable
 
         Returns:
-            torch.Tensor: pytorch tensor
+            torch.autograd.Variable: pytorch tensor
         """
 
         var = torch.FloatTensor(var)

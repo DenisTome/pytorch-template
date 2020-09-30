@@ -6,7 +6,7 @@ Dataset proxy class
 
 """
 import torch
-from base.base_dataset import BaseDataset, SubSet
+from base.base_dataset import BaseDatasetProxy, SubSet
 from base.base_dataset import OutputData, DatasetInputFormat
 from dataset_def.lmdb import LmdbReader
 from dataset_def.h5 import H5Reader
@@ -18,26 +18,17 @@ __all__ = [
 ]
 
 
-class Dataset(BaseDataset):
+class Dataset(BaseDatasetProxy):
     """Dataset proxy class"""
 
-    def __init__(self, path: str,
-                 input_type: DatasetInputFormat = DatasetInputFormat.ORIGINAL,
-                 transf: dict = None, sampling: int = 1, limit: int = -1,
-                 out_data: bytes = OutputData.ALL,
-                 set_type=SubSet.TRAIN):
+    def __init__(self, path: str, transf: dict = None, sampling: int = 1,
+                 set_type=SubSet.TRAIN, **kwargs):
         """Init
 
         Args:
             path (str): dataset path
-            input_type (DatasetInputFormat, optional): source data type.
-                                                       Defaults to DatasetInputFormat.ORIGINAL.
             transf (dict, optional): data transformation. Defaults to None.
             sampling (int, optional): data sampling factor. Defaults to 1.
-            limit (int, optional): max number of samples to consider.
-                                   if -1 no limit. Defaults to -1.
-            out_data (OutputData, optional): data to return by tge class.
-                                             Defaults to OutputData.ALL.
             set_type (SubSet, optional): set type. Defaults to SubSet.TRAIN.
         """
 
@@ -45,23 +36,17 @@ class Dataset(BaseDataset):
         if set_type != SubSet.TRAIN:
             desc = set_type.value
 
-        super().__init__()
-
-        self.input_type = input_type
-        self.out_data = out_data
-        self.limit = limit
-        self.max_joints = self.get_max_joints()
-        self.max_2d_joints = config.model.openpose.n_joints
+        super().__init__(**kwargs)
 
         # ------------------- data transformations -------------------
 
-        self.transf = transf
+        self._transf = transf
         self._check_transormations()
 
         # ------------------- dataset reader based on type -------------------
 
-        dataset_reader_class = self._get_dataset_reader()
-        self.dataset_reader = dataset_reader_class(path, sampling, desc=desc)
+        dataset_reader = self._get_dataset_reader()
+        self._dataset_reader = dataset_reader(path, sampling, desc=desc)
 
     def _check_transormations(self):
         """Check that transormations are in the right format"""
@@ -81,23 +66,17 @@ class Dataset(BaseDataset):
             BaseDataset: dataset reader
         """
 
-        if self.input_type == DatasetInputFormat.ORIGINAL:
+        if self._input_type == DatasetInputFormat.ORIGINAL:
             return OriginalReader
 
-        if self.input_type == DatasetInputFormat.LMDB:
+        if self._input_type == DatasetInputFormat.LMDB:
             return LmdbReader
 
-        if self.input_type == DatasetInputFormat.H5PY:
+        if self._input_type == DatasetInputFormat.H5PY:
             return H5Reader
 
         self._logger.error('Dataset input type not recognized!')
         return -1
-
-    @property
-    def d_names(self) -> list:
-        """Get daset names"""
-
-        return self.dataset_reader.d_names
 
     def _apply_transformations(self, data: dict) -> dict:
         """Apply transformation to data
@@ -219,7 +198,4 @@ class Dataset(BaseDataset):
         return out
 
     def __len__(self):
-        if self.limit > 0:
-            return self.limit
-
         return len(self.dataset_reader)

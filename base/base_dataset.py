@@ -7,25 +7,20 @@ depending on the different datasets.
 
 """
 
-__author__ = "Denis Tome"
-__license__ = "Proprietary"
-__version__ = "0.1.2"
-__author__ = "Denis Tome"
-__email__ = "denis.tome@epicgames.com"
-__status__ = "Development"
+__version__ = "0.2.0"
 
-
+from abc import abstractmethod
 from enum import Enum, Flag
 from torch.utils.data import Dataset
 from logger.console_logger import ConsoleLogger
-from utils.config import config
 from utils.io import abs_path
 import utils.math as umath
 
 __all__ = [
-    'BaseDataset',
     'SubSet',
-    'DatasetInputFormat'
+    'DatasetInputFormat',
+    'BaseDatasetReader',
+    'BaseDatasetProxy'
 ]
 
 
@@ -52,21 +47,17 @@ class OutputData(Flag):
     IMG = 1 << 0
     P3D = 1 << 1
     P2D = 1 << 2
-    P2DHAT = 1 << 3
-    ROT = 1 << 4
-    META = 1 << 5
-    DID = 1 << 6
-    ALL = umath.binary_full_n_bits(7)
+    ALL = umath.binary_full_n_bits(3)
 
 
-class BaseDataset(Dataset):
+class BaseDatasetReader(Dataset):
     """Base dataset class"""
 
-    def __init__(self, path: str = None, sampling: int = None, desc: str = None):
+    def __init__(self, path: str, sampling: int = 1, desc: str = None):
         """Initialize class
 
         Args:
-            path (str, optional): data patj. Defaults to None.
+            path (str): data path.
             sampling (int, optional): sampling factor. Defaults to None.
             desc (str, optional): description. Defaults to None.
         """
@@ -78,51 +69,73 @@ class BaseDataset(Dataset):
             logger_name += '_{}'.format(desc)
 
         self._logger = ConsoleLogger(logger_name)
-        if path:
-            self.data_dir = abs_path(path)
-        if sampling:
-            self.sampling = sampling
-        else:
-            self.sampling = 1
+        self._sampling = sampling
+        self._path = abs_path(path)
 
-    @staticmethod
-    def initialize_frame_output() -> dict:
-        """Initialize frame output dictionary
+        # ------------------- index data -------------------
 
-        Returns:
-            dict: frame dat
-        """
+        self._indices = self._index_dataset()
 
-        frame = dict()
-        for key in OutputData:
-            frame[key] = None
+    @property
+    def sampling(self) -> int:
+        """get sampling"""
+        return self._sampling
 
-        return frame
+    @property
+    def path(self) -> str:
+        """get dataset path"""
+        return self._path
 
-    def get_dataset_types(self, paths: list) -> list:
-        """Dataset types by looking at paths
+    @abstractmethod
+    def _index_dataset(self) -> list:
+        """Index data"""
+        raise NotImplementedError
 
-        Arguments:
-            paths (list): list of lmdb paths
-
-        Returns:
-            list: dataset names
-        """
-
-        d_types = []
-        for p in paths:
-            for d_type in config.dataset.supported:
-                if d_type in p:
-                    d_types.append(d_type)
-                    break
-
-        if len(d_types) != len(paths):
-            self._logger.error('Some datasets are not recognized!')
-
-        return d_types
+    def __len__(self):
+        """Length of the dataset"""
+        return len(self._indices)
 
     def __getitem__(self, index):
         raise NotImplementedError()
 
-    def __len__(self):
+
+class BaseDatasetProxy(Dataset):
+    """Base dataset proxy class that loads the dataset base on the input
+    source which facilitate having a dataset in different formats based
+    on the most ideal configuration for the machine.
+
+    E.g. local v.s. remote execution on AWS.
+    """
+
+    def __init__(self,
+                 input_type: DatasetInputFormat = DatasetInputFormat.ORIGINAL,
+                 out_data_selection: bytes = OutputData.ALL):
+        """Initialize class
+
+        Args:
+            input_type (DatasetInputFormat, optional): source where to get data from.
+                                                       Defaults to DatasetInputFormat.ORIGINAL.
+            out_data_selection (bytes, optional): data we want to get as output.
+                                                  Defaults to OutputData.ALL.
+        """
+
+        super().__init__()
+
+        logger_name = self.__class__.__name__
+        self._logger = ConsoleLogger(logger_name)
+
+        self._input_type = input_type
+        self._out_data_sel = out_data_selection
+
+    @abstractmethod
+    def _get_dataset_reader(self) -> BaseDatasetReader:
+        """Based on the value of self._input_type, return the
+        correct dataset reader
+
+        Returns:
+            BaseDatasetReader: dataset reader to be used
+        """
+        raise NotImplementedError
+
+    def __getitem__(self, index):
         raise NotImplementedError()

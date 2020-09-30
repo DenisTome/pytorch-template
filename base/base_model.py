@@ -6,12 +6,7 @@ Base model class
 
 """
 
-__author__ = "Denis Tome"
-__license__ = "Proprietary"
-__version__ = "0.1.1"
-__author__ = "Denis Tome"
-__email__ = "denis.tome@epicgames.com"
-__status__ = "Development"
+__version__ = "0.1.2"
 
 import torch.nn as nn
 import numpy as np
@@ -24,6 +19,7 @@ class BaseModel(nn.Module):
     """
 
     def __init__(self):
+        """Init"""
         super().__init__()
         self.model = None
 
@@ -35,7 +31,7 @@ class BaseModel(nn.Module):
 
         raise NotImplementedError
 
-    def summary(self):
+    def summary(self) -> None:
         """Summary of the model"""
 
         model_parameters = filter(lambda p: p.requires_grad, self.parameters())
