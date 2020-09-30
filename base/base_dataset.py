@@ -56,13 +56,17 @@ class OutputData(Flag):
 class BaseDatasetReader(Dataset):
     """Base dataset class"""
 
-    def __init__(self, path: str, sampling: int = 1, desc: str = None):
+    def __init__(self, path: str, sampling: int = 1,
+                 out_data_selection: bytes = OutputData.ALL,
+                 desc: str = None):
         """Initialize class
 
         Args:
             path (str): data path.
             sampling (int, optional): sampling factor. Defaults to None.
             desc (str, optional): description. Defaults to None.
+            out_data_selection (bytes, optional): data we want to get as output.
+                                                  Defaults to OutputData.ALL.
         """
 
         super().__init__()
@@ -74,6 +78,7 @@ class BaseDatasetReader(Dataset):
         self._logger = ConsoleLogger(logger_name)
         self._sampling = sampling
         self._path = abs_path(path)
+        self._out_data_sel = out_data_selection
 
         # ------------------- index data -------------------
 
@@ -93,6 +98,19 @@ class BaseDatasetReader(Dataset):
     def _index_dataset(self) -> list:
         """Index data"""
         raise NotImplementedError
+
+    def _initialize_frame_output(self) -> dict:
+        """Initialize frame output dictionary
+
+        Returns:
+            dict: dictionary where keys as expected outputs
+        """
+
+        frame = dict()
+        for key in self._out_data_sel:
+            frame[key] = None
+
+        return frame
 
     def __len__(self):
         """Length of the dataset"""

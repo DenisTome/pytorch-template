@@ -8,7 +8,7 @@ Copyright Epic Games, Inc. All Rights Reserved.
 
 """
 
-__version__ = 'v0.1.0'
+__version__ = 'v0.2.0'
 
 from .template import FrameworkClass
 from .base_dataset import OutputData

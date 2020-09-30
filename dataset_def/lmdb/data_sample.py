@@ -18,8 +18,8 @@ class DataSample():
         """Initialize class
 
         Arguments:
-            p3d {np.ndarray} -- joint positions
-            rot {np.ndarray} -- local joint rotations
+            p3d (np.ndarray): joint positions
+            rot (np.ndarray): local joint rotations
 
         Keywork Arguments:
             t {tensor} -- root joint translation (default: {None})

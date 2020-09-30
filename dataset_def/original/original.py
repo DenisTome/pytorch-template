@@ -27,7 +27,6 @@ class OriginalReader(BaseDatasetReader):
         """Init"""
 
         super().__init__(*args, **kwargs)
-        self.n_joints = None
 
         # ------------------- cache -------------------
 
@@ -40,7 +39,7 @@ class OriginalReader(BaseDatasetReader):
         This is specific to each dataset; each has a different
         structure.
 
-        Arguments:
+        Args:
             path (str): directory path
 
         Returns:
@@ -97,7 +96,7 @@ class OriginalReader(BaseDatasetReader):
     def _get_processed_sample(self, file_path: str, sample_id: int):
         """Process sample
 
-        Arguments:
+        Args:
             file_path (str): file path
             sample_id (int): sample id
 
@@ -121,24 +120,10 @@ class OriginalReader(BaseDatasetReader):
 
         return sample
 
-    @staticmethod
-    def _initialize_frame_output() -> dict:
-        """Initialize frame output dictionary
-
-        Returns:
-            dict: dictionary where keys as expected outputs
-        """
-
-        frame = dict()
-        for key in OutputData:
-            frame[key] = None
-
-        return frame
-
     def __getitem__(self, index: int) -> dict:
         """Get sample
 
-        Arguments:
+        Args:
             index (int): sample id
 
         Returns:
