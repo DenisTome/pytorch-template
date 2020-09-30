@@ -15,10 +15,12 @@ from torch.utils.data import Dataset
 from logger.console_logger import ConsoleLogger
 from utils.io import abs_path
 import utils.math as umath
+from .base_transformation import ComposeTransformations
 
 __all__ = [
     'SubSet',
     'DatasetInputFormat',
+    'OutputData',
     'BaseDatasetReader',
     'BaseDatasetProxy'
 ]
@@ -44,10 +46,11 @@ class DatasetInputFormat(Enum):
 class OutputData(Flag):
     """Data to return by data loader"""
 
-    IMG = 1 << 0
-    P3D = 1 << 1
-    P2D = 1 << 2
-    ALL = umath.binary_full_n_bits(3)
+    NONE = 1 << 0
+    IMG = 1 << 1
+    P3D = 1 << 2
+    P2D = 1 << 3
+    ALL = umath.binary_full_n_bits(4)
 
 
 class BaseDatasetReader(Dataset):
@@ -109,7 +112,8 @@ class BaseDatasetProxy(Dataset):
 
     def __init__(self,
                  input_type: DatasetInputFormat = DatasetInputFormat.ORIGINAL,
-                 out_data_selection: bytes = OutputData.ALL):
+                 out_data_selection: bytes = OutputData.ALL,
+                 transformation: ComposeTransformations = None):
         """Initialize class
 
         Args:
@@ -117,6 +121,8 @@ class BaseDatasetProxy(Dataset):
                                                        Defaults to DatasetInputFormat.ORIGINAL.
             out_data_selection (bytes, optional): data we want to get as output.
                                                   Defaults to OutputData.ALL.
+            transformation (ComposeTransformations, optional): set of transformations to apply
+                                                               to the data
         """
 
         super().__init__()
@@ -126,6 +132,7 @@ class BaseDatasetProxy(Dataset):
 
         self._input_type = input_type
         self._out_data_sel = out_data_selection
+        self._transf = transformation
 
     @abstractmethod
     def _get_dataset_reader(self) -> BaseDatasetReader:
@@ -136,6 +143,21 @@ class BaseDatasetProxy(Dataset):
             BaseDatasetReader: dataset reader to be used
         """
         raise NotImplementedError
+
+    def _apply_transformations(self, data: dict) -> dict:
+        """Apply transformations to data
+
+        Args:
+            data (dict): keys are the selected data according to OutputData
+
+        Returns:
+            dict: transformed data
+        """
+
+        if not self._transf:
+            return data
+
+        return self._transf(data, self._out_data_sel)
 
     def __getitem__(self, index):
         raise NotImplementedError()

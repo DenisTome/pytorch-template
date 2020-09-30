@@ -6,7 +6,7 @@ Dataset proxy class
 
 """
 import torch
-from base.base_dataset import BaseDatasetProxy, SubSet
+import base
 from base.base_dataset import OutputData, DatasetInputFormat
 from dataset_def.lmdb import LmdbReader
 from dataset_def.h5 import H5Reader
@@ -18,11 +18,11 @@ __all__ = [
 ]
 
 
-class Dataset(BaseDatasetProxy):
+class Dataset(base.BaseDatasetProxy):
     """Dataset proxy class"""
 
-    def __init__(self, path: str, transf: dict = None, sampling: int = 1,
-                 set_type=SubSet.TRAIN, **kwargs):
+    def __init__(self, path: str, sampling: int = 1,
+                 set_type=base.SubSet.TRAIN, **kwargs):
         """Init
 
         Args:
@@ -33,33 +33,17 @@ class Dataset(BaseDatasetProxy):
         """
 
         desc = None
-        if set_type != SubSet.TRAIN:
+        if set_type != base.SubSet.TRAIN:
             desc = set_type.value
 
         super().__init__(**kwargs)
-
-        # ------------------- data transformations -------------------
-
-        self._transf = transf
-        self._check_transormations()
 
         # ------------------- dataset reader based on type -------------------
 
         dataset_reader = self._get_dataset_reader()
         self._dataset_reader = dataset_reader(path, sampling, desc=desc)
 
-    def _check_transormations(self):
-        """Check that transormations are in the right format"""
-
-        if self.transf:
-            if not isinstance(self.transf, dict):
-                self._logger.error('Transformations needs to be a dictionary!')
-
-            if not set(self.transf.keys()).issubset(set(config.dataset.supported)):
-                self._logger.error(
-                    'Dataset transformations from unsupported dataset!')
-
-    def _get_dataset_reader(self):
+    def _get_dataset_reader(self) -> base.base_dataset.BaseDatasetReader:
         """Get dataset reader based on mode
 
         Returns:
@@ -77,21 +61,6 @@ class Dataset(BaseDatasetProxy):
 
         self._logger.error('Dataset input type not recognized!')
         return -1
-
-    def _apply_transformations(self, data: dict) -> dict:
-        """Apply transformation to data
-
-        Args:
-            data (dict): keys are the available data OutputData types
-
-        Returns:
-            dict: transformed data
-        """
-
-        if not self.transf:
-            return data
-
-        return self.transf(data, self.out_data)
 
     def __getitem__(self, index):
         """Get frame
