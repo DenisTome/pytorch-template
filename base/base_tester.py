@@ -10,15 +10,17 @@ Copyright Epic Games, Inc. All Rights Reserved.
 
 __version__ = "0.2.0"
 
+from abc import abstractmethod
 import os
 import re
+import time
 import torch
 import numpy as np
 from base import BaseModelExecution
 import utils.io as io
 
 
-class BaseTester(BaseModelExecution):
+class BaseModelEval(BaseModelExecution):
     """
     Base class for all dataset testers
     """
@@ -43,6 +45,8 @@ class BaseTester(BaseModelExecution):
 
         self._exec_time = 0
         self._dataset = dataset
+        self._time_start = 0
+        self._metric_results = None
 
         # ------------------- IO Related -------------------
 
@@ -126,21 +130,31 @@ class BaseTester(BaseModelExecution):
                              path)[0][0]
         return version
 
-    def _update_exec_time(self, t):
-        """Update execution time
+    def _start_time(self):
+        """Get time"""
+        self._time_start = time.time()
 
-        Arguments:
-            t (long): execution time in ms
-        """
+    def _stop_time(self):
+        """Stop and update total execution time"""
 
-        self._exec_time += t / self._batch_size
+        stop_time = time.time()
+        time_int = stop_time - self._start_time
+        self._exec_time += time_int / self._batch_size
 
-    def _save_testing_info(self, metrics):
-        """Save test information
+    def _eval_on_metrices(self, pred: np.array, gt: np.array) -> float:
 
-        Arguments:
-            metrics (Metric): metrics used for evaluation
-        """
+        results = np.zeros(len(self._metrics), dtype=float)
+        for mid, metric in enumerate(self._metrics):
+            results[mid] = metric.evaluate(pred, gt)
+
+        if self._metric_results is None:
+            self._metric_results = [results]
+            return
+
+        self._metric_results.append(results)
+
+    def _save_testing_info(self):
+        """Save test information"""
 
         file_path = os.path.join(self._save_dir,
                                  self._output_name,
@@ -155,13 +169,14 @@ class BaseTester(BaseModelExecution):
             'avg_exec_time': self._exec_time / num_elems,
         }
 
+        results = np.array(self._metric_results)
         for mid in np.arange(len(self._metrics)):
-            info[self._metrics[mid].__class__.__name__] = metrics[mid] / \
-                len(self._test_loader)
+            info[self._metrics[mid].__class__.__name__] = np.mean(results[:, mid])
 
         # save json file
         io.write_json(file_path, info)
 
+    @abstractmethod
     def test(self):
         """Run test on the test-set"""
-        raise NotImplementedError()
+        raise NotImplementedError

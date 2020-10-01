@@ -15,5 +15,5 @@ from .base_dataset import SubSet, DatasetInputFormat
 from .base_metric import BaseMetric
 from .base_model import BaseModel
 from .base_parser import BaseParser
-from .base_tester import BaseTester
+from .base_tester import BaseModelEval
 from .base_trainer import BaseTrainer

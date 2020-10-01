@@ -28,11 +28,10 @@ class BaseMetric(FrameworkClass):
 
         super().__init__()
         self._metric_init = 0.0
-        self._name_format = self._desc
         self._logger = logger
 
     @abstractmethod
-    def _eval(self, pred: np.array, gt: np.array) -> float:
+    def evaluate(self, pred: np.array, gt: np.array) -> float:
         """Compute metric
 
         Args:
@@ -53,7 +52,7 @@ class BaseMetric(FrameworkClass):
             iteration (int): iteration number
         """
 
-        error = self._eval(pred, gt)
+        error = self.evaluate(pred, gt)
         self.log_res(error, iteration)
 
     def log_res(self, error: float, iteration: int) -> None:

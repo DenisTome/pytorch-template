@@ -7,7 +7,6 @@ Custom metric inheriting from base_metric
 Copyright Epic Games, Inc. All Rights Reserved.
 
 """
-
 import numpy as np
 from base import BaseMetric
 from utils import compute_3d_joint_error
@@ -19,7 +18,7 @@ class PoseError(BaseMetric):
     and the predicted 3D poses.
     """
 
-    def _eval(self, pred: np.array, gt: np.array) -> float:
+    def evaluate(self, pred: np.array, gt: np.array) -> float:
         """Compute metric
 
         Args:
