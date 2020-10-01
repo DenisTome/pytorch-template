@@ -70,7 +70,6 @@ class BaseTester(BaseModelExecution):
         if self._with_cuda:
             self._model.cuda()
 
-        self._model_name = self._model.name
         if self.is_multi_gpu():
             self._logger.info('Let\'s use %d GPUs!',
                               torch.cuda.device_count())

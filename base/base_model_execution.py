@@ -34,6 +34,8 @@ class BaseModelExecution(FrameworkClass):
         super().__init__()
 
         self._model = model
+        self._model_name = self._model.name
+        self._model_version = self._model.version
         self._with_cuda = not no_cuda
         self._single_gpu = not self.is_multi_gpu()
 
