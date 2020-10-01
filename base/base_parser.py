@@ -6,14 +6,11 @@ file and are overwritten from the arguments provided by the user.
 
 @author: Denis Tome'
 
+Copyright Epic Games, Inc. All Rights Reserved.
+
 """
 
-__author__ = "Denis Tome"
-__license__ = "Proprietary"
-__version__ = "0.1.0"
-__author__ = "Denis Tome"
-__email__ = "denis.tome@epicgames.com"
-__status__ = "Development"
+__version__ = "0.2.0"
 
 import argparse
 from base.template import FrameworkClass

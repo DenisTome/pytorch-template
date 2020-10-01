@@ -2,7 +2,10 @@
 """
 Implementation of learning rate decay
 
+
 @author: Denis Tome'
+
+Copyright Epic Games, Inc. All Rights Reserved.
 
 """
 
@@ -42,9 +45,9 @@ class LRDecay:
         self.decay_step = decay_steps
         self.mode = mode
 
-    def _exponential_decay(self, iter):
+    def _exponential_decay(self, iteration):
         """Apply decay"""
-        return self.lr * self.decay_rate ** (iter / self.decay_step)
+        return self.lr * self.decay_rate ** (iteration / self.decay_step)
 
     def update_lr(self, global_step):
         """Update based on global step

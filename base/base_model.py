@@ -26,11 +26,6 @@ class BaseModel(nn.Module):
         self.name = self.__class__.__name__
         self._logger = ConsoleLogger(self.__class__.__name__)
 
-    def forward(self, x):
-        """Forward"""
-
-        raise NotImplementedError
-
     def summary(self) -> None:
         """Summary of the model"""
 

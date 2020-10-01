@@ -7,6 +7,8 @@ files from the Human3.6M dataset.
 
 @author: Denis Tome'
 
+Copyright Epic Games, Inc. All Rights Reserved.
+
 """
 import os
 import numpy as np

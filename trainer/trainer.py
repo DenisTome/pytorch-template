@@ -104,7 +104,7 @@ class Trainer(BaseTrainer):
             # --------------------- Validation ---------------------
             # ------------------------------------------------------
 
-            if self.val_loaderL
+            if self.val_loader:
                 if (self.global_step % self.val_log_step == 0) and (self.global_step > 0):
                     self._logger.info('Evaluating performance of evaluation set')
                     val_loss = self._valid_epoch()

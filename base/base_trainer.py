@@ -101,7 +101,7 @@ class BaseTrainer(BaseModelExecution):
     def _update_name_convention(self, desc: bool, desc_str: str):
         """Update model descriptor according to name convention
 
-        Arguments:
+        Args:
             desc (bool): add descriptor to name
             desc_str (str): str to attach
 
@@ -132,7 +132,7 @@ class BaseTrainer(BaseModelExecution):
     def get_dataset_len(data_loader) -> int:
         """Get dataset size
 
-        Arguments:
+        Args:
             data_loader (DataLoader): dataset loader
 
         Returns:
@@ -208,7 +208,7 @@ class BaseTrainer(BaseModelExecution):
     def _save_checkpoint(self, epoch: int, iteration: int, loss: float) -> str:
         """Save model
 
-        Arguments:
+        Args:
             epoch (int): epoch number
             iteration (int): iteration number
             loss (float): loss value
@@ -250,7 +250,7 @@ class BaseTrainer(BaseModelExecution):
     def _resume_checkpoint(self, resume_path: str) -> None:
         """Resume model to be fine-tuned
 
-        Arguments:
+        Args:
             resume_path (str): path to the directory or model to be resumed
         """
 

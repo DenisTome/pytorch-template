@@ -4,11 +4,13 @@ Dataset proxy class
 
 @author: Denis Tome'
 
+Copyright Epic Games, Inc. All Rights Reserved.
+
 """
 import base
 from base.base_dataset import OutputData, DatasetInputFormat
 from dataset_def.lmdb import LmdbReader
-from dataset_def.h5 import H5Reader
+# from dataset_def.h5 import H5Reader
 from dataset_def.original import OriginalReader
 
 __all__ = [
@@ -56,8 +58,8 @@ class Dataset(base.BaseDatasetProxy):
         if self._input_type == DatasetInputFormat.LMDB:
             return LmdbReader
 
-        if self._input_type == DatasetInputFormat.H5PY:
-            return H5Reader
+        # if self._input_type == DatasetInputFormat.H5PY:
+        #     return H5Reader
 
         self._logger.error('Dataset input type not recognized!')
         return -1

@@ -4,6 +4,8 @@ Transformations
 
 @author: Denis Tome'
 
+Copyright Epic Games, Inc. All Rights Reserved.
+
 """
 import torch
 from torchvision import transforms

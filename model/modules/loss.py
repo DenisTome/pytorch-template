@@ -1,8 +1,10 @@
 # -*- coding: utf-8 -*-
 """
-Custom loss
+Custom losses
 
 @author: Denis Tome'
+
+Copyright Epic Games, Inc. All Rights Reserved.
 
 """
 import torch
@@ -12,16 +14,16 @@ __all__ = [
 ]
 
 
-def ae_loss(predicted, target):
+def ae_loss(predicted, target) -> float:
     """Custom loss used when both prediction
     and target comes from the model
 
-    Arguments:
-        predicted {tensor} -- pytorch tensor
-        target {tensor} -- pytorch tensor
+    Args:
+        predicted (torch.Tensor): pytorch tensor
+        target (torch.Tensor): pytorch tensor
 
     Returns:
-        tensor -- loss
+        float: loss
     """
 
     diff = torch.pow(predicted.view_as(target) - target, 2)

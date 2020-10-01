@@ -1,8 +1,10 @@
 # -*- coding: utf-8 -*-
 """
-Init file
+Init
 
 @author: Denis Tome'
+
+Copyright Epic Games, Inc. All Rights Reserved.
 
 """
 from .model import Model

@@ -5,6 +5,8 @@ when training a model
 
 @author: Denis Tome'
 
+Copyright Epic Games, Inc. All Rights Reserved.
+
 """
 import math
 import torch
@@ -26,9 +28,9 @@ class LinearWN(nn.Linear):
         super(LinearWN, self).__init__(in_features, out_features, bias)
         self.g = nn.Parameter(torch.ones(out_features))
 
-    def forward(self, input):
+    def forward(self, x):
         wnorm = torch.sqrt(torch.sum(self.weight ** 2))
-        return F.linear(input, self.weight * self.g[:, None] / wnorm, self.bias)
+        return F.linear(x, self.weight * self.g[:, None] / wnorm, self.bias)
 
 
 class ConvTranspose2dWNUB(nn.ConvTranspose2d):

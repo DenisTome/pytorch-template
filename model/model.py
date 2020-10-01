@@ -16,12 +16,14 @@ class Model(BaseModel):
     """Model"""
 
     def __init__(self):
+        """Init"""
         super().__init__()
+
         self.cnn = None
         self.fc = None
-        self.build_model()
+        self._build_model()
 
-    def build_model(self):
+    def _build_model(self):
         """Building model"""
 
         self.cnn = nn.Sequential(
@@ -41,6 +43,15 @@ class Model(BaseModel):
             nn.Linear(128, 10))
 
     def forward(self, x):
+        """Forward pass
+
+        Args:
+            x (torch.Tensor): input tensor
+
+        Returns:
+            torch.Tensor: output
+        """
+
         output = self.cnn(x)
         output = output.view(output.size()[0], -1)
         output = self.fc(output)

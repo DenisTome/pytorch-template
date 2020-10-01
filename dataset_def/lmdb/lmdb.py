@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-MDataset loader class to load data the dataset from the lmdb files.
+LmdbDataset loader class to load data the dataset from the lmdb files.
 
 Here I show an example of the LmdbReader implemented for reading
 files from the Human3.6M dataset.
@@ -10,6 +10,8 @@ the original files in lmdb format, therefore we have a defined structure
 we have defined when saving the files.
 
 @author: Denis Tome'
+
+Copyright Epic Games, Inc. All Rights Reserved.
 
 """
 import lmdb

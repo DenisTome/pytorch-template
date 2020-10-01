@@ -5,6 +5,8 @@ the other classes
 
 @author: Denis Tome'
 
+Copyright Epic Games, Inc. All Rights Reserved.
+
 """
 
 __version__ = "0.2.0"
