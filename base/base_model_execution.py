@@ -5,9 +5,11 @@ those classes that involve training/testing the model
 
 @author: Denis Tome'
 
+Copyright Epic Games, Inc. All Rights Reserved.
+
 """
 
-__version__ = "0.1.2"
+__version__ = "0.2.0"
 
 import os
 from collections import OrderedDict
@@ -31,13 +33,14 @@ class BaseModelExecution(FrameworkClass):
 
         super().__init__()
 
-        self.model = model
-        self.with_cuda = not no_cuda
-        self.single_gpu = not self.is_multi_gpu()
+        self._model = model
+        self._with_cuda = not no_cuda
+        self._single_gpu = not self.is_multi_gpu()
 
         # ------------------- Resources -------------------
+
         if not torch.cuda.is_available():
-            self.with_cuda = False
+            self._with_cuda = False
 
     @staticmethod
     def get_n_gpus() -> int:
@@ -49,14 +52,15 @@ class BaseModelExecution(FrameworkClass):
 
         return torch.cuda.device_count()
 
+    @property
     def is_multi_gpu(self) -> bool:
-        """Is multi-GPU available
+        """Is multi-GPU available for model
 
         Returns:
             bool: True if multi-GPU available
         """
 
-        if self.with_cuda and (self.get_n_gpus() > 1):
+        if self._with_cuda and (self.get_n_gpus() > 1):
             return True
 
         return False
@@ -64,7 +68,7 @@ class BaseModelExecution(FrameworkClass):
     def _get_var(self, var: torch.Tensor) -> torch.autograd.Variable:
         """Generate variable based on CUDA availability
 
-        Arguments:
+        Args:
             var (torch.Tensor): tensor to be turned into a variable
 
         Returns:
@@ -74,38 +78,28 @@ class BaseModelExecution(FrameworkClass):
         var = torch.FloatTensor(var)
         var = Variable(var)
 
-        if self.with_cuda:
+        if self._with_cuda:
             var = var.cuda()
 
         return var
 
-    def set_model_mode(self, model_mode):
-        """Set model mode
-
-        Arguments:
-            model_mode (str/list): model mode
-        """
-
-        if isinstance(model_mode, list):
-            model_mode = '{}_to_{}'.format(*model_mode)
-
-        if self.single_gpu:
-            self.model.set_model_mode(model_mode)
-        else:
-            self.model.module.set_model_mode(model_mode)
-
     def _resume_checkpoint(self, resume_path: str):
         """Resume model specified by the path
 
-        Arguments:
+        Args:
             resume_path (str): path to directory containing the model
-                               or the model itself
+                               or the model itself. If it's `init` than the model
+                               is randomly initialized.
         """
 
-        if resume_path == 'init':
-            self._logger.error('A model checkpoint needs to be provided!')
+        if resume_path is None:
+            AssertionError('resume path cannot be None!')
 
-        # load model
+        if resume_path == 'init':
+            return
+
+        # ------------------- load model -------------------
+
         if not os.path.isfile(resume_path):
             resume_path = io.get_checkpoint(resume_path)
 
@@ -114,13 +108,13 @@ class BaseModelExecution(FrameworkClass):
         trained_dict = checkpoint['state_dict']
 
         if is_model_parallel(checkpoint):
-            if self.single_gpu:
+            if self._single_gpu:
                 trained_dict = OrderedDict((k.replace('module.', ''), val)
                                            for k, val in checkpoint['state_dict'].items())
         else:
-            if not self.single_gpu:
+            if not self._single_gpu:
                 trained_dict = OrderedDict(('module.{}'.format(k), val)
                                            for k, val in checkpoint['state_dict'].items())
 
-        self.model.load_state_dict(trained_dict)
+        self._model.load_state_dict(trained_dict)
         self._logger.info("Checkpoint '%s' loaded", resume_path)

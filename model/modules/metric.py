@@ -1,10 +1,13 @@
 # -*- coding: utf-8 -*-
 """
-Custom metric
+Custom metric inheriting from base_metric
 
 @author: Denis Tome'
 
+Copyright Epic Games, Inc. All Rights Reserved.
+
 """
+
 import numpy as np
 from base import BaseMetric
 from utils import compute_3d_joint_error
@@ -16,15 +19,15 @@ class PoseError(BaseMetric):
     and the predicted 3D poses.
     """
 
-    def eval(self, pred, gt):
-        """Evaluate
+    def _eval(self, pred: np.array, gt: np.array) -> float:
+        """Compute metric
 
-        Arguments:
-            pred {numpy array} -- prediction
-            gt {numpy arrat} -- ground truth
+        Args:
+            pred (np.array): predictions
+            gt (np.array): ground truth
 
         Returns:
-            float -- error
+            float: result of evaluation
         """
 
         overall_err = 0.0
@@ -35,6 +38,7 @@ class PoseError(BaseMetric):
 
         return overall_err / pred.shape[0]
 
-    def _desc(self):
+    @property
+    def desc(self):
+        """Get description of the metric"""
         return 'MeanJointError'
-

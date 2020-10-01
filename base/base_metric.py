@@ -4,88 +4,72 @@ Base metric class to be extended
 
 @author: Denis Tome'
 
+Copyright Epic Games, Inc. All Rights Reserved.
+
 """
 
-__version__ = "0.1.1"
+__version__ = "0.2.0"
 
+from abc import abstractmethod
+import numpy as np
 from base.template import FrameworkClass
+from logger.console_logger import ConsoleLogger
 
 
 class BaseMetric(FrameworkClass):
     """Base Metric class"""
 
-    def __init__(self):
-        """Initialize class"""
+    def __init__(self, logger: ConsoleLogger):
+        """Init
+
+        Args:
+            logger (ConsoleLogger): train logger where to save results to.
+        """
 
         super().__init__()
-        self.metric_init = 0.0
-        self.name_format = self._desc
+        self._metric_init = 0.0
+        self._name_format = self._desc
+        self._logger = logger
 
-    def eval(self, pred, gt):
+    @abstractmethod
+    def _eval(self, pred: np.array, gt: np.array) -> float:
         """Compute metric
 
-        Arguments:
-            pred (numpy array): predicted pose
-            gt (numpy array): ground truth pose
-        """
-        raise NotImplementedError('Abstract method in BaseMetric class...')
-
-    def add_results(self, res, pred, gt):
-        """Update results
-
-        Arguments:
-            res (float): sum of past evaluations
-            pred (numpy array): predicted pose
-            gt (numpy array): ground truth pose
+        Args:
+            pred (np.array): predictions
+            gt (np.array): ground truth
 
         Returns:
-            float: sum of evaluations
+            float: result of evaluation
         """
+        raise NotImplementedError
 
-        if res is None:
-            res = self.metric_init
+    def eval_and_log(self, pred: np.array, gt: np.array, iteration: int) -> None:
+        """Compute error and save it in the log
 
-        return res + self.eval(pred, gt)
-
-    def log(self, logger, iteration, pred, gt, dataset=None):
-        """Evaluate and add it to the log file
-
-        Arguments:
-            logger (Logger): class responsible for logging info
+        Args:
+            pred (np.array): prediction
+            gt (np.array): ground truth
             iteration (int): iteration number
-            pred (numpy array): prediction
-            gt (numpy array): ground truth
-            dataset (str): dataset name
         """
 
-        error = self.eval(pred, gt)
-        self.log_res(logger,
-                     iteration,
-                     error,
-                     dataset)
+        error = self._eval(pred, gt)
+        self.log_res(error, iteration)
 
-    def log_res(self, logger, iteration, error, dataset=None):
-        """Add result to log file
+    def log_res(self, error: float, iteration: int) -> None:
+        """Add given error to log file
 
-        Arguments:
-            logger (Logger): class responsible for logging into
+        Args:
+            error (float): error
             iteration (int): iteration number
-            error (float): error value
-            dataset (str): dataset name
         """
 
-        if dataset:
-            logger.add_scalar('metrics/{0}_{1}'.format(dataset, self.name_format),
-                              error,
-                              iteration)
-        else:
-            logger.add_scalar('metrics/{0}'.format(self.name_format),
-                              error,
-                              iteration)
+        self._logger.add_scalar(
+            'metrics/{0}'.format(self._name_format),
+            error, iteration)
 
+    @abstractmethod
     @property
-    def _desc(self):
-        """Name of the descriptor to use in thensorboard
-        to represent the metric"""
-
-        raise NotImplementedError('Abstract method in BaseMetric class...')
+    def desc(self):
+        """Get description of the metric"""
+        return 'BaseMetric'

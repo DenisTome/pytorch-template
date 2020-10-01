@@ -4,14 +4,11 @@ Base tester class to be extended
 
 @author: Denis Tome'
 
+Copyright Epic Games, Inc. All Rights Reserved.
+
 """
 
-__author__ = "Denis Tome"
-__license__ = "Proprietary"
-__version__ = "0.1.2"
-__author__ = "Denis Tome"
-__email__ = "denis.tome@epicgames.com"
-__status__ = "Development"
+__version__ = "0.2.0"
 
 import os
 import re
@@ -34,28 +31,34 @@ class BaseTester(BaseModelExecution):
         super().__init__(model, no_cuda)
 
         # ------------------- NN -------------------
-        self.metrics = metrics
-        self.min_loss = np.inf
+
+        self._metrics = metrics
+        self._min_loss = np.inf
 
         # ------------------- Hyper-params -------------------
-        self.batch_size = batch_size
+
+        self._batch_size = batch_size
 
         # ------------------- Log -------------------
-        self.exec_time = 0
-        self.dataset = dataset
+
+        self._exec_time = 0
+        self._dataset = dataset
 
         # ------------------- IO Related -------------------
-        self.test_loader = test_loader
-        self.output_name = name
-        self.save_dir = io.ensure_dir(io.abs_path(output))
-        self.model_resume_path = resume
-        io.ensure_dir(os.path.join(self.save_dir, self.output_name))
+
+        self._test_loader = test_loader
+        self._output_name = name
+        self._save_dir = io.ensure_dir(io.abs_path(output))
+        self._model_resume_path = resume
+        io.ensure_dir(os.path.join(self._save_dir, self._output_name))
 
         if desc:
+            # add defscription to the checkpoint file to differentiante
+            # between several configurations of the same architecture
             learning_rate = self._get_learning_rate(resume)
             self.desc = 'lr_{}_b_{}'.format(
-                learning_rate, self.batch_size
-            )
+                learning_rate, self._batch_size)
+
             eph_num = self._get_epoch_number(resume)
             if eph_num:
                 self.desc = '{}_ckpt_eph_{}'.format(self.desc, eph_num)
@@ -63,15 +66,18 @@ class BaseTester(BaseModelExecution):
             self.desc = ''
 
         # ------------------- Resources -------------------
-        if self.with_cuda:
-            self.model.cuda()
 
+        if self._with_cuda:
+            self._model.cuda()
+
+        self._model_name = self._model.name
         if self.is_multi_gpu():
             self._logger.info('Let\'s use %d GPUs!',
                               torch.cuda.device_count())
-            self.model = torch.nn.DataParallel(self.model)
+            self._model = torch.nn.DataParallel(self._model)
 
         # ------------------- Resume -------------------
+
         self._resume_checkpoint(resume)
 
     @staticmethod
@@ -128,7 +134,7 @@ class BaseTester(BaseModelExecution):
             t (long): execution time in ms
         """
 
-        self.exec_time += t / self.batch_size
+        self._exec_time += t / self._batch_size
 
     def _save_testing_info(self, metrics):
         """Save test information
@@ -137,22 +143,22 @@ class BaseTester(BaseModelExecution):
             metrics (Metric): metrics used for evaluation
         """
 
-        file_path = os.path.join(self.save_dir,
-                                 self.output_name,
+        file_path = os.path.join(self._save_dir,
+                                 self._output_name,
                                  'TEST.json')
-        num_elems = len(self.test_loader)
+        num_elems = len(self._test_loader)
 
         info = {
             'num_batches': num_elems,
-            'batch_size': self.batch_size,
-            'num_frames': num_elems * self.batch_size,
-            'model': self.model.name,
-            'avg_exec_time': self.exec_time / num_elems,
+            'batch_size': self._batch_size,
+            'num_frames': num_elems * self._batch_size,
+            'model': self._model_name,
+            'avg_exec_time': self._exec_time / num_elems,
         }
 
-        for mid in np.arange(len(self.metrics)):
-            info[self.metrics[mid].__class__.__name__] = metrics[mid] / \
-                len(self.test_loader)
+        for mid in np.arange(len(self._metrics)):
+            info[self._metrics[mid].__class__.__name__] = metrics[mid] / \
+                len(self._test_loader)
 
         # save json file
         io.write_json(file_path, info)
