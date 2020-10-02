@@ -8,6 +8,6 @@ Bvh classes
 from .config import *
 from .util import *
 from .io import *
-from .draw import *
 from .math import *
 from .conversion import *
+from .viewer import Viewer
