@@ -4,7 +4,11 @@ Custom controllers for training the model
 
 @author: Denis Tome'
 
+Copyright Epic Games, Inc. All Rights Reserved.
+
 """
+
+__version__ = "0.2.0"
 
 __all__ = [
     'get_optimizer_lr'
@@ -14,11 +18,11 @@ __all__ = [
 def get_optimizer_lr(optimizer):
     """Get learning-rate from optimizer
 
-    Arguments:
-        optimizer {Optimizer} -- torch optimizer
+    Args:
+        optimizer (Optimizer): torch optimizer
 
     Returns:
-        float -- learning rate
+        float: learning rate
     """
 
     lr = None

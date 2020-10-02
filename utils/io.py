@@ -4,7 +4,12 @@ IO Utils
 
 @author: Denis Tome'
 
+Copyright Epic Games, Inc. All Rights Reserved.
+
 """
+
+__version__ = "0.2.0"
+
 import re
 import os
 import json
@@ -22,7 +27,6 @@ __all__ = [
     'read_from_json',
     'abs_path',
     'get_dir',
-    'remove_files',
     'write_h5',
     'read_h5',
     'get_sub_dirs',
@@ -33,18 +37,18 @@ __all__ = [
 ]
 
 
-def get_checkpoint(resume_path):
-    """Get checkpoint
+def get_checkpoint(resume_path: str) -> str:
+    """Get checkpoint file from dir with multiple checkpoints
 
-    Arguments:
-        resume_path {str} -- path to the dir containing the checkpoint or
-                             partially defined path ('*' only allowed at the end)
+    Args:
+        resume_path (str): path to the dir containing the checkpoint or
+                           partially defined path ('*' only allowed at the end)
 
     Raises:
-        IOError -- No checkpoint has been found
+        IOError: No checkpoint has been found
 
     Returns:
-        str -- path to the checkpoint
+        str: path to the checkpoint file
     """
 
     if not os.path.isdir(resume_path):
@@ -63,9 +67,8 @@ def get_checkpoint(resume_path):
         # let's get a model in the same directory
         resume_path = path_dir
 
-    models_list = [
-        f for f in os.listdir(resume_path) if f.endswith(".pth.tar")
-    ]
+    models_list = [f for f in os.listdir(
+        resume_path) if f.endswith(".pth.tar")]
     models_list.sort()
 
     if not models_list:
@@ -77,31 +80,30 @@ def get_checkpoint(resume_path):
     return os.path.join(resume_path, model_name)
 
 
-def ensure_dir(path):
-    """Make sure directory exists, otherwise
-    create it.
+def ensure_dir(path: str) -> str:
+    """Make sure directory exists, otherwise create it.
 
-    Arguments:
-        path {str} -- path to the directory
+    Args:
+        path (str): path to the directory
 
     Returns:
-        str -- path to the directory
+        str: path to the directory
     """
 
     if not os.path.exists(path):
         os.makedirs(path)
+
     return path
 
 
-def get_filename_from_path(path):
-    """Get name of a file given the absolute or
-    relative path
+def get_filename_from_path(path: str):
+    """Get name of a file given the absolute or relative path
 
-    Arguments:
-        path {str} -- path to the file
+    Args:
+        path (str): path to the file
 
     Returns:
-        str -- file name without format
+        str: file name without format
     """
 
     assert isinstance(path, str)
@@ -112,26 +114,26 @@ def get_filename_from_path(path):
     return file_name, file_format
 
 
-def file_exists(path):
+def file_exists(path: str) -> bool:
     """Check if file exists
 
-    Arguments:
-        path {str} -- path to the file
+    Args:
+        path (str): path to the file
 
     Returns:
-        bool -- True if file exists
+        bool: True if file exists
     """
 
     assert isinstance(path, str)
     return os.path.exists(path)
 
 
-def write_json(path, data):
+def write_json(path: str, data: dict) -> None:
     """Save data into a json file
 
-    Arguments:
-        path {str} -- path where to save the file
-        data {serializable} -- data to be stored
+    Args:
+        path (str): path where to save the file
+        data (dict): data to be stored
     """
 
     assert isinstance(path, str)
@@ -139,17 +141,17 @@ def write_json(path, data):
         json.dump(data, out_file, indent=2)
 
 
-def read_from_json(path):
+def read_from_json(path: str) -> dict:
     """Read data from json file
 
-    Arguments:
-        path {str} -- path to json file
+    Args:
+        path (str): path to json file
 
     Raises:
-        IOError -- File not found
+        IOError: File not found
 
     Returns:
-        dict -- dictionary containing data
+        dict: dictionary containing data
     """
 
     assert isinstance(path, str)
@@ -162,17 +164,17 @@ def read_from_json(path):
     return data
 
 
-def abs_path(path):
+def abs_path(path: str) -> str:
     """Get absolute path of a relative one
 
-    Arguments:
-        path {str} -- relative path
+    Args:
+        path (str): relative path
 
     Raises:
-        NameError -- String is empty
+        NameError: string is empty
 
     Returns:
-        str -- absolute path
+        str: absolute path
     """
 
     assert isinstance(path, str)
@@ -182,15 +184,14 @@ def abs_path(path):
     raise NameError('Path is empty...')
 
 
-def get_dir(path):
-    """Get directory name from absolute or
-    relative path
+def get_dir(path: str):
+    """Get directory name from absolute or relative path
 
-    Arguments:
-        path {str} -- path to directory
+    Args:
+        path (str): path to directory
 
     Returns:
-        str -- directory name
+        str: directory name
     """
 
     assert isinstance(path, str)
@@ -203,27 +204,15 @@ def get_dir(path):
     return name
 
 
-def remove_files(paths):
-    """Delete files
-
-    Arguments:
-        paths {list} -- list of paths
-    """
-
-    assert isinstance(paths, list)
-    for path in paths:
-        os.remove(path)
-
-
-def write_h5(path, data):
+def write_h5(path: str, data: dict) -> None:
     """Write h5 file
 
-    Arguments:
-        path {str} -- file path where to save the data
-        data {seriaizable} -- data to be saved
+    Args:
+        path (str): file path where to save the data
+        data (dict): data to be saved
 
     Raises:
-        NotImplementedError -- non serializable data to save
+        NotImplementedError: non serializable data to save
     """
 
     if '.h5' not in path[-3:]:
@@ -242,24 +231,26 @@ def write_h5(path, data):
         hf.create_dataset('val', data=data)
     else:
         raise NotImplementedError
+
     hf.close()
 
 
-def read_h5(path):
+def read_h5(path: str) -> dict:
     """Load data from h5 file
 
-    Arguments:
-        path {str} -- file path
+    Args:
+        path (str): file path
 
     Raises:
-        FileNotFoundError -- Path not pointing to a file
+        FileNotFoundError: path not pointing to a file
 
     Returns:
-        dict -- dictionary containing the data
+        dict: dictionary containing the data
     """
 
     data_files = dict()
     h5_data = h5py.File(path, mode='r')
+
     tags = list(h5_data.keys())
     for tag in tags:
         tag_data = np.asarray(h5_data[tag]).copy()
@@ -269,15 +260,15 @@ def read_h5(path):
     return data_files
 
 
-def get_sub_dirs(path):
+def get_sub_dirs(path: str):
     """Get sub-directories contained in a specified directory
 
-    Arguments:
-        path {str} -- path to directory
+    Args:
+        path (str): path to directory
 
     Returns:
-        str -- lists of absolute paths
-        str -- list of dir names
+        str: lists of absolute paths
+        str: list of dir names
     """
 
     try:
@@ -294,17 +285,19 @@ def get_sub_dirs(path):
     return dirs, dir_paths
 
 
-def get_files(path, file_format, keep_format=True):
+def get_files(path: str, file_format: str, keep_format: bool = True):
     """Get file paths of files contained in
     a given directory according to the format
 
-    Arguments:
-        path {str} -- path to the directory containing the files
-        file_format {list | str} -- list or single format
+    Args:
+        path (str): path to the directory containing the files
+        file_format (list): list or single format
+        keep_format (bool, optional): keep format in file names.
+                                      Defualts to True.
 
     Returns:
-        str -- lists of absolute paths
-        str -- list of file names
+        str: lists of absolute paths
+        str: list of file names
     """
 
     if isinstance(file_format, str):
@@ -344,16 +337,15 @@ def get_files(path, file_format, keep_format=True):
     return file_paths, file_names
 
 
-def make_relative(path, root_path):
-    """Make path relative with respect to a
-    root directory
+def make_relative(path: str, root_path: str) -> str:
+    """Make path relative with respect to a root directory.
 
-    Arguments:
-        path {str} -- current path
-        root_path {str} -- root directory path
+    Args:
+        path (str): current path
+        root_path (str): root directory path
 
     Returns:
-        str -- relative path
+        str: relative path
     """
 
     r_path = path.replace(root_path, '')
@@ -367,26 +359,25 @@ def make_relative(path, root_path):
 def serialize(data):
     """Serialize data
 
-    Arguments:
-        data {object} -- object to serialize
+    Args:
+        data (object): object to serialize
 
     Returns:
-        bytes -- serialized object
+        bytes: serialized object
     """
 
     return pickletools.optimize(
-        pickle.dumps(data, pickle.HIGHEST_PROTOCOL)
-    )
+        pickle.dumps(data, pickle.HIGHEST_PROTOCOL))
 
 
 def unserialize(serialized_data):
     """Serialized object to object
 
-    Arguments:
-        serialized_data {bytes} -- serialized object
+    Args:
+        serialized_data (bytes): serialized object
 
     Returns:
-        object -- unserialized object
+        object: unserialized object
     """
 
     return pickle.loads(serialized_data)
