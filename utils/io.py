@@ -23,6 +23,7 @@ __all__ = [
     'ensure_dir',
     'get_filename_from_path',
     'file_exists',
+    'get_format',
     'write_json',
     'read_from_json',
     'abs_path',
@@ -31,9 +32,8 @@ __all__ = [
     'read_h5',
     'get_sub_dirs',
     'get_files',
+    'remove_files',
     'make_relative',
-    'serialize',
-    'unserialize'
 ]
 
 
@@ -84,44 +84,45 @@ def ensure_dir(path: str) -> str:
     """Make sure directory exists, otherwise create it.
 
     Args:
-        path (str): path to the directory
+        path (str): path to the directory.
 
     Returns:
-        str: path to the directory
+        str: path to the directory.
     """
 
-    if not os.path.exists(path):
-        os.makedirs(path)
-
+    dir_path = get_dir(path)
+    if not os.path.exists(dir_path):
+        os.makedirs(dir_path)
     return path
 
 
-def get_filename_from_path(path: str):
-    """Get name of a file given the absolute or relative path
+def get_filename_from_path(path: str) -> str:
+    """Get name of a file given the absolute or
+    relative path.
 
     Args:
-        path (str): path to the file
+        path (str): path to the file.
 
     Returns:
-        str: file name without format
+        str: file name without format.
     """
 
     assert isinstance(path, str)
-    file_with_format = os.path.split(path)[-1]
-    file_format = re.findall(r'\.[a-zA-Z]+', file_with_format)[-1]
-    file_name = file_with_format.replace(file_format, '')
+    split = os.path.split(path)
+    if len(split) == 1:
+        return split
 
-    return file_name, file_format
+    return split[-1]
 
 
 def file_exists(path: str) -> bool:
     """Check if file exists
 
     Args:
-        path (str): path to the file
+        path (str): path to the file.
 
     Returns:
-        bool: True if file exists
+        bool: True if file exists.
     """
 
     assert isinstance(path, str)
@@ -184,24 +185,51 @@ def abs_path(path: str) -> str:
     raise NameError('Path is empty...')
 
 
-def get_dir(path: str):
-    """Get directory name from absolute or relative path
+def get_dir(path: str) -> str:
+    """Get file path from absolute or relative path without
+    file name.
 
     Args:
-        path (str): path to directory
+        path (str): path to directory.
 
     Returns:
-        str: directory name
+        str: path.
     """
 
-    assert isinstance(path, str)
+    assert isinstance(path, str), "Path must be a string"
 
-    try:
-        name = path.split('/')[-1]
-    except IndexError:
+    # check if it's arready a dir
+    if os.path.isdir(path):
         return path
 
-    return name
+    split = os.path.split(path)
+    # check if the path is only the file name
+    if len(split) == 1:
+        return './'
+
+    return split[0]
+
+
+def get_format(path: str) -> str:
+    """Get file format from path
+
+    Args:
+        path (str): file path.
+
+    Raises:
+        RuntimeError: File path has no format.
+
+    Returns:
+        str: file format.
+    """
+
+    file_name = get_filename_from_path(path)
+    split_str = file_name.split('.')
+
+    if len(split_str) <= 1:
+        raise RuntimeError('File name has no format')
+
+    return split_str[-1]
 
 
 def write_h5(path: str, data: dict) -> None:
@@ -337,15 +365,28 @@ def get_files(path: str, file_format: str, keep_format: bool = True):
     return file_paths, file_names
 
 
-def make_relative(path: str, root_path: str) -> str:
-    """Make path relative with respect to a root directory.
+def remove_files(paths: list) -> None:
+    """Delete files
 
     Args:
-        path (str): current path
-        root_path (str): root directory path
+        paths (list): list of paths
+    """
+
+    assert isinstance(paths, list)
+    for path in paths:
+        os.remove(path)
+
+
+def make_relative(path: str, root_path: str) -> str:
+    """Make path relative with respect to a
+    root directory
+
+    Arguments:
+        path (str): current path.
+        root_path (str): root directory path.
 
     Returns:
-        str: relative path
+        str: relative path.
     """
 
     r_path = path.replace(root_path, '')
@@ -354,30 +395,3 @@ def make_relative(path: str, root_path: str) -> str:
             r_path = r_path[1:]
 
     return r_path
-
-
-def serialize(data):
-    """Serialize data
-
-    Args:
-        data (object): object to serialize
-
-    Returns:
-        bytes: serialized object
-    """
-
-    return pickletools.optimize(
-        pickle.dumps(data, pickle.HIGHEST_PROTOCOL))
-
-
-def unserialize(serialized_data):
-    """Serialized object to object
-
-    Args:
-        serialized_data (bytes): serialized object
-
-    Returns:
-        object: unserialized object
-    """
-
-    return pickle.loads(serialized_data)
