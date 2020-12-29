@@ -5,6 +5,3 @@ dirs:
 
 datasets:
   type: "lmdb"
-
-mpl:
-  mode: "agg"

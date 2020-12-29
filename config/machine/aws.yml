@@ -5,6 +5,3 @@ dirs:
 
 datasets:
   type: "s3"
-
-mpl:
-  mode: "agg"

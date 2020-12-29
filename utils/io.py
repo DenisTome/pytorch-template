@@ -9,15 +9,6 @@ Copyright Epic Games, Inc. All Rights Reserved.
 """
 
 __version__ = "0.2.0"
-
-import re
-import os
-import json
-import pickle
-import pickletools
-import h5py
-import numpy as np
-
 __all__ = [
     'get_checkpoint',
     'ensure_dir',
@@ -35,6 +26,12 @@ __all__ = [
     'remove_files',
     'make_relative',
 ]
+
+import re
+import os
+import json
+import h5py
+import numpy as np
 
 
 def get_checkpoint(resume_path: str) -> str:
