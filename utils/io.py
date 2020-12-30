@@ -195,9 +195,14 @@ def get_dir(path: str) -> str:
 
     assert isinstance(path, str), "Path must be a string"
 
-    # check if it's arready a dir
-    if os.path.isdir(path):
-        return path
+    # check if exists
+    if not os.path.exists(path):
+        if '.' not in path[:-5]:
+            return path
+    else:
+        # check if it's arready a dir
+        if os.path.isdir(path):
+            return path
 
     split = os.path.split(path)
     # check if the path is only the file name
