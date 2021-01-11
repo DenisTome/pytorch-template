@@ -2030,13 +2030,31 @@ def is_same_quaternion(q0, q1):
     return numpy.allclose(q0, q1) or numpy.allclose(q0, -q1)
 
 
-def norm2(vec):
+def norm2(vec) -> float:
     """Compute norm 2 of the vector"""
 
     if not isinstance(vec, numpy.ndarray):
         vec = numpy.array(vec)
 
+    assert vec.ndim == 1, "Wrong dimensionality"
     return numpy.sqrt(numpy.sum(vec ** 2))
+
+
+def norm2_batch(vec: numpy.array) -> numpy.array:
+    """Compute norm 2 of many vectors
+
+    Args:
+        vec (numpy.array): format (B x n_features)
+
+    Returns:
+        numpy.array: normals
+    """
+
+    if not isinstance(vec, numpy.ndarray):
+        vec = numpy.array(vec)
+
+    assert vec.ndim == 2, "Wrong dimensionality"
+    return numpy.sqrt(numpy.sum(vec ** 2, axis=1))
 
 
 def binary_full_n_bits(n: int):
